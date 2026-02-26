@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background-light text-slate-900 font-display antialiased transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-background-dark text-slate-100;
+  }
+}
+
+.parchment-bg {
+  @apply bg-background-light;
+  background-image: radial-gradient(circle at 2px 2px, rgba(19, 91, 236, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.dark .parchment-bg {
+  @apply bg-background-dark;
+  background-image: radial-gradient(circle at 2px 2px, rgba(19, 91, 236, 0.08) 1px, transparent 0);
+}
+
+.bead-shadow {
+  box-shadow: 0 0 15px rgba(19, 91, 236, 0.3);
+}
+
+.time-picker-gradient {
+  background: linear-gradient(to bottom, #fbfcfd 0%, transparent 20%, transparent 80%, #fbfcfd 100%);
+}
+
+.dark .time-picker-gradient {
+  background: linear-gradient(to bottom, #0f172a 0%, transparent 20%, transparent 80%, #0f172a 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/40 rounded-full hover:bg-primary/60 transition-colors;
+}
