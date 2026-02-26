@@ -6,6 +6,7 @@ import { BibleVerse } from '../services/bibleService';
 interface LibraryProps {
   onNavigate: (screen: Screen) => void;
   psalmOfDay: BibleVerse | null;
+  onOpenPremium: () => void;
 }
 
 const LADAINHA_TEXT = [
@@ -91,7 +92,7 @@ const ANGELUS_TEXT = [
   "Infundi, Senhor, a vossa graça em nossas almas, para que nós, que conhecemos pela anunciação do Anjo a encarnação de Jesus Cristo, vosso Filho, cheguemos, por sua paixão e cruz, à glória da ressurreição. Pelo mesmo Cristo, Senhor nosso. Amém."
 ];
 
-export default function LibraryComponent({ onNavigate, psalmOfDay }: LibraryProps) {
+export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium }: LibraryProps) {
   const [selectedText, setSelectedText] = useState<{ title: string; content: string[] } | null>(null);
 
   const categories = [
@@ -149,20 +150,12 @@ export default function LibraryComponent({ onNavigate, psalmOfDay }: LibraryProp
            <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-none">Biblioteca</h2>
             <button 
-              onClick={() => onNavigate('profile')}
+              onClick={onOpenPremium}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
             >
               <Lock size={12} />
               Seja Premium
             </button>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar livros, salmos..." 
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 dark:text-white"
-            />
           </div>
         </div>
 

@@ -17,7 +17,12 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
   const [vibrate, setVibrate] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
 
-  const sounds = ['Gregoriano', 'Sinos', 'Natureza', 'Harpa'];
+  const sounds = [
+    { name: 'Gregoriano', url: 'https://cdn.pixabay.com/audio/2022/03/15/audio_736631620c.mp3' },
+    { name: 'Sinos', url: 'https://cdn.pixabay.com/audio/2022/03/10/audio_5e024220b2.mp3' },
+    { name: 'Natureza', url: 'https://cdn.pixabay.com/audio/2022/01/18/audio_20668f4e24.mp3' },
+    { name: 'Harpa', url: 'https://cdn.pixabay.com/audio/2021/11/25/audio_cbb94d36e4.mp3' }
+  ];
 
   const adjustHour = (delta: number) => {
     let newHour = (time.hour + delta + 24) % 24;
@@ -30,15 +35,31 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
   };
 
   const togglePreview = () => {
-    setIsPreviewing(!isPreviewing);
-    // Logic for actual playback would go here
-    if (!isPreviewing) {
-      setTimeout(() => setIsPreviewing(false), 3000);
+    if (isPreviewing) {
+      const audio = document.getElementById('preview-audio') as HTMLAudioElement;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      setIsPreviewing(false);
+    } else {
+      const selectedSound = sounds.find(s => s.name === sound);
+      if (selectedSound) {
+        setIsPreviewing(true);
+        const audio = document.getElementById('preview-audio') as HTMLAudioElement;
+        if (audio) {
+          audio.src = selectedSound.url;
+          audio.play().catch(e => console.error("Error playing audio:", e));
+          
+          audio.onended = () => setIsPreviewing(false);
+        }
+      }
     }
   };
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
+      <audio id="preview-audio" className="hidden" />
       {/* Top Header */}
       <div className="flex items-center p-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shrink-0">
         <button onClick={() => onNavigate('home')} className="text-slate-400 dark:text-slate-100 size-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
@@ -67,11 +88,11 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
           
           {/* Minutes */}
           <div className="flex flex-col items-center gap-2">
-            <button onClick={() => adjustMinute(-5)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
+            <button onClick={() => adjustMinute(-1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
             <div className="bg-white dark:bg-slate-900 size-24 rounded-[32px] flex items-center justify-center border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
               <span className="text-4xl font-black text-slate-900 dark:text-white">{String(time.minute).padStart(2, '0')}</span>
             </div>
-            <button onClick={() => adjustMinute(5)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
+            <button onClick={() => adjustMinute(1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
           </div>
         </div>
 
@@ -92,21 +113,30 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
                   isPreviewing ? 'bg-primary text-white scale-105' : 'bg-slate-100 dark:bg-slate-800 text-primary hover:bg-primary/5'
                 }`}
               >
-                {isPreviewing ? 'Tocando...' : 'Ouvir Prévia'}
+                {isPreviewing ? 'Parar Prévia' : 'Ouvir Prévia'}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {sounds.map(s => (
                 <button 
-                  key={s}
-                  onClick={() => setSound(s)}
+                  key={s.name}
+                  onClick={() => {
+                    setSound(s.name);
+                    if (isPreviewing) {
+                       const audio = document.getElementById('preview-audio') as HTMLAudioElement;
+                       if (audio) {
+                         audio.src = s.url;
+                         audio.play();
+                       }
+                    }
+                  }}
                   className={`py-3 px-4 rounded-2xl text-xs font-bold transition-all border-2 ${
-                    sound === s 
+                    sound === s.name
                       ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105' 
                       : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700'
                   }`}
                 >
-                  {s}
+                  {s.name}
                 </button>
               ))}
             </div>

@@ -15,7 +15,7 @@ export default function Navigation({ currentScreen, onNavigate }: NavigationProp
   ];
 
   return (
-    <div className="relative w-full border-t border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-3 pb-8 z-40">
+    <div className="flex-shrink-0 w-full border-t border-slate-200/50 dark:border-slate-800/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-6 py-4 pb-6 z-40 select-none">
       <div className="flex items-center justify-between">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -27,7 +27,7 @@ export default function Navigation({ currentScreen, onNavigate }: NavigationProp
             <button 
               key={item.id}
               onClick={() => onNavigate(item.id as Screen)} 
-              className={`flex flex-col items-center gap-1 transition-all duration-300 ${
+              className={`flex flex-col items-center gap-1 transition-all duration-300 touch-manipulation ${
                 isActive 
                   ? 'text-primary scale-110' 
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'

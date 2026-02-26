@@ -5,7 +5,57 @@ import Prayer from './components/Prayer';
 import Alarm from './components/Alarm';
 import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
-import { Library, PencilLine, User } from 'lucide-react';
+import { 
+  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart 
+} from 'lucide-react';
+
+// Helper Components for Modals
+const PremiumFeatureItem = ({ icon: Icon, title, description }: any) => (
+  <div className="flex items-start gap-4 p-2">
+    <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+      <Icon size={20} />
+    </div>
+    <div>
+      <h4 className="text-sm font-black text-slate-900 dark:text-white">{title}</h4>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{description}</p>
+    </div>
+  </div>
+);
+
+const AchievementBlock = ({ title, desc, progress, total, current, icon: Icon, earned }: any) => (
+  <div className={`p-5 rounded-3xl border-2 transition-all ${earned ? 'bg-primary/5 border-primary shadow-lg shadow-primary/5' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
+    <div className="flex items-center gap-4 mb-4">
+      <div className={`size-12 rounded-2xl flex items-center justify-center ${earned ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
+        <Icon size={24} />
+      </div>
+      <div className="flex-1">
+        <h4 className={`text-sm font-black ${earned ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{title}</h4>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{desc}</p>
+      </div>
+      {earned && <CheckCircle2 size={20} className="text-primary" />}
+    </div>
+    <div className="space-y-1.5">
+      <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+        <div 
+          className="bg-primary h-full transition-all duration-1000" 
+          style={{ width: `${progress}%` }}
+        ></div>
+      </div>
+      <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
+        <span>Progresso</span>
+        <span>{current || 0}/{total}</span>
+      </div>
+    </div>
+  </div>
+);
+
+const ArtworkPattern = () => (
+  <div className="grid grid-cols-4 gap-2 rotate-12 -translate-y-10">
+    {[...Array(12)].map((_, i) => (
+      <div key={i} className="aspect-square bg-white/30 rounded-lg"></div>
+    ))}
+  </div>
+);
 
 export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile';
 
@@ -42,6 +92,35 @@ export default function App() {
   const [dailyHistory, setDailyHistory] = useState<string[]>([]);
   const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null);
   const [psalmOfDay, setPsalmOfDay] = useState<BibleVerse | null>(null);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [userNameSubtitle, setUserNameSubtitle] = useState(() => {
+    return localStorage.getItem('rosario_user_subtitle') || 'Fiel de Maria';
+  });
+  const [isSupporter, setIsSupporter] = useState(() => {
+    return localStorage.getItem('rosario_is_supporter') === 'true';
+  });
+  const [prayerTypography, setPrayerTypography] = useState(() => {
+    const saved = localStorage.getItem('rosario_prayer_typography');
+    return saved ? JSON.parse(saved) : {
+      fontFamily: 'font-serif',
+      fontSize: 'text-3xl',
+      isBold: false
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rosario_prayer_typography', JSON.stringify(prayerTypography));
+  }, [prayerTypography]);
+
+  useEffect(() => {
+    localStorage.setItem('rosario_is_supporter', String(isSupporter));
+  }, [isSupporter]);
+
+  useEffect(() => {
+    localStorage.setItem('rosario_user_subtitle', userNameSubtitle);
+  }, [userNameSubtitle]);
 
   useEffect(() => {
     // Load persisted data
@@ -185,6 +264,7 @@ export default function App() {
             {currentScreen === 'home' && (
               <Home 
                 onNavigate={setCurrentScreen} 
+                onOpenPremium={() => setIsPremiumModalOpen(true)}
                 dailyArt={dailyArt} 
                 isDarkMode={isDarkMode} 
                 onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
@@ -204,6 +284,7 @@ export default function App() {
                 onNavigate={setCurrentScreen} 
                 dailyArt={dailyArt} 
                 onComplete={handlePrayerComplete}
+                typography={prayerTypography}
               />
             )}
             {currentScreen === 'alarm' && (
@@ -226,17 +307,22 @@ export default function App() {
                 setUserName={setUserName}
                 userPhoto={userPhoto}
                 setUserPhoto={setUserPhoto}
+                userNameSubtitle={userNameSubtitle}
+                setUserNameSubtitle={setUserNameSubtitle}
                 onPhotoUpload={handlePhotoUpload}
                 notifications={notifications}
                 setNotifications={setNotifications}
                 activeSub={settingsSub}
                 setActiveSub={setSettingsSub}
+                prayerTypography={prayerTypography}
+                setPrayerTypography={setPrayerTypography}
               />
             )}
             {currentScreen === 'library' && (
               <LibraryComponent 
                 onNavigate={setCurrentScreen} 
                 psalmOfDay={psalmOfDay}
+                onOpenPremium={() => setIsPremiumModalOpen(true)}
               />
             )}
             {currentScreen === 'bible' && (
@@ -259,9 +345,239 @@ export default function App() {
                 totalPrayers={totalPrayers}
                 streak={streak}
                 dailyHistory={dailyHistory}
+                userNameSubtitle={userNameSubtitle}
+                isSupporter={isSupporter}
+                onOpenPremium={() => setIsPremiumModalOpen(true)}
+                onOpenAchievements={() => setIsAchievementsModalOpen(true)}
+                onOpenDonation={() => setIsDonationModalOpen(true)}
               />
             )}
           </motion.div>
+        </AnimatePresence>
+
+        {/* Premium Paywall Modal */}
+        <AnimatePresence>
+          {isPremiumModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-end justify-center"
+            >
+              <div 
+                className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                onClick={() => setIsPremiumModalOpen(false)}
+              ></div>
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[40px] shadow-2xl flex flex-col max-h-[92dvh]"
+              >
+                {/* Sticky close button — always visible */}
+                <button 
+                  onClick={() => setIsPremiumModalOpen(false)}
+                  className="absolute top-4 right-4 z-10 size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+
+                {/* Scrollable content */}
+                <div className="overflow-y-auto">
+                  {/* Header */}
+                  <div className="h-44 bg-primary relative overflow-hidden rounded-t-[40px]">
+                    <div className="absolute inset-0 opacity-20">
+                      <ArtworkPattern />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 via-transparent"></div>
+                    <div className="absolute bottom-0 inset-x-0 flex flex-col items-center pb-2">
+                      <div className="size-16 bg-accent-gold rounded-2xl shadow-xl shadow-gold/20 flex items-center justify-center text-white mb-2">
+                        <Sparkles size={32} />
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900 dark:text-white">Premium Gold</h2>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-5 pb-10">
+                    <div className="space-y-3">
+                      <PremiumFeatureItem icon={Activity} title="Dashboard Detalhado" description="Acompanhe sua evolução diária com gráficos." />
+                      <PremiumFeatureItem icon={History} title="Histórico Completo" description="Veja todas as suas orações passadas." />
+                      <PremiumFeatureItem icon={ShieldCheck} title="Sem Anúncios" description="Uma experiência focada 100% na sua fé." />
+                      <PremiumFeatureItem icon={Download} title="Bíblia Offline" description="Acesse a Palavra sem precisar de internet." />
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Assinatura Mensal</p>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">R$</span>
+                        <span className="text-4xl font-black text-slate-900 dark:text-white">11,90</span>
+                      </div>
+                      <p className="text-[10px] font-bold text-primary mt-2 flex items-center justify-center gap-1 italic">
+                        <Clock size={12} /> Teste por 7 dias grátis
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <button className="w-full bg-primary text-white font-black py-5 rounded-[28px] shadow-xl shadow-primary/25 hover:bg-primary-dark transition-all active:scale-[0.98]">
+                        Assinar Agora
+                      </button>
+                      
+                      <button className="w-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold py-4 rounded-[24px] flex items-center justify-center gap-2 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-sm">
+                        <Heart size={18} fill="currentColor" className="opacity-80" />
+                        Fazer uma Doação Única
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-center text-slate-400 px-6">
+                      Cancele a qualquer momento nas configurações da sua conta.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Achievements Modal */}
+        <AnimatePresence>
+          {isAchievementsModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+            >
+              <div 
+                className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                onClick={() => setIsAchievementsModalOpen(false)}
+              ></div>
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-10">
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">Suas Conquistas</h2>
+                  <button 
+                    onClick={() => setIsAchievementsModalOpen(false)}
+                    className="size-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[70vh]">
+                  <AchievementBlock 
+                    title="Iniciante na Fé" 
+                    desc="Completou o primeiro terço" 
+                    progress={100} 
+                    total={1} 
+                    earned={true}
+                    icon={Sparkles}
+                  />
+                  <AchievementBlock 
+                    title="Fiel Constante" 
+                    desc="Rezar por 7 dias seguidos" 
+                    progress={Math.min((streak/7)*100, 100)} 
+                    total={7} 
+                    current={streak}
+                    icon={Flame}
+                  />
+                  <AchievementBlock 
+                    title="Devoto de Maria" 
+                    desc="Completar 12 terços" 
+                    progress={Math.min((totalPrayers/12)*100, 100)} 
+                    total={12} 
+                    current={totalPrayers}
+                    icon={Award}
+                  />
+                  <AchievementBlock 
+                    title="Guardião da Alvorada" 
+                    desc="Rezar antes das 08:00 por 3 dias" 
+                    progress={0} 
+                    total={3} 
+                    icon={Moon}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Donation (Apoio) Modal */}
+        <AnimatePresence>
+          {isDonationModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6"
+            >
+              <div 
+                className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+                onClick={() => setIsDonationModalOpen(false)}
+              ></div>
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl flex flex-col"
+              >
+                <div className="p-8 pb-4 text-center">
+                  <div className="size-20 bg-rose-500 rounded-[32px] mx-auto flex items-center justify-center text-white mb-6 shadow-xl shadow-rose-200 dark:shadow-rose-950/40">
+                    <Heart size={40} fill="currentColor" />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Apoie o Rosário Diário</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-medium px-4">
+                    Sua contribuição ajuda a manter o app no ar e gratuito para milhares de pessoas. Ao apoiar, você ganha o <span className="text-rose-500 font-black italic">Selo de Apoiador</span> no seu perfil!
+                  </p>
+                </div>
+
+                <div className="p-8 pt-4 space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {[
+                      { id: 'coffee', label: 'Um Cafézinho', price: '4,90', icon: '☕' },
+                      { id: 'rosary', label: 'Um Terço', price: '14,90', icon: '📿' },
+                      { id: 'church', label: 'Ajuda Generosa', price: '49,90', icon: '⛪' }
+                    ].map((level) => (
+                      <button 
+                        key={level.id}
+                        onClick={() => {
+                          // Simulating IAP success for now
+                          setIsSupporter(true);
+                          setIsDonationModalOpen(false);
+                        }}
+                        className="flex items-center justify-between p-5 rounded-3xl border-2 border-slate-100 dark:border-slate-800 hover:border-rose-500/30 hover:bg-rose-50/30 dark:hover:bg-rose-900/10 transition-all group active:scale-[0.98]"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl">{level.icon}</span>
+                          <div className="text-left">
+                            <span className="text-sm font-black text-slate-900 dark:text-white block">{level.label}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Contribuição Única</span>
+                          </div>
+                        </div>
+                        <span className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-2xl text-xs font-black text-slate-900 dark:text-white group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                          R$ {level.price}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="text-[10px] text-center text-slate-400 px-6 font-medium italic">
+                    * Transação processada com segurança pela {window.navigator.userAgent.includes('Android') ? 'Google Play' : 'App Store'}.
+                  </p>
+                  
+                  <button 
+                    onClick={() => setIsDonationModalOpen(false)}
+                    className="w-full py-4 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
+                  >
+                    Agora não, obrigado
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
       

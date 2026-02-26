@@ -1,4 +1,4 @@
-import { ChevronLeft, Moon, Sun, Bell, User, Shield, Info, LogOut, Trash2, Check, X, Camera } from 'lucide-react';
+import { ChevronLeft, Moon, Sun, Bell, User, Shield, Info, LogOut, Trash2, Check, X, Camera, Type } from 'lucide-react';
 import { Screen } from '../App';
 import { useState } from 'react';
 import avPadrao from '../assets/avatares/padrao.png';
@@ -20,9 +20,17 @@ interface SettingsProps {
   setNotifications: (notifs: any) => void;
   activeSub: SubScreen;
   setActiveSub: (sub: SubScreen) => void;
+  prayerTypography: {
+    fontFamily: string;
+    fontSize: string;
+    isBold: boolean;
+  };
+  setPrayerTypography: (typo: any) => void;
+  userNameSubtitle: string;
+  setUserNameSubtitle: (subtitle: string) => void;
 }
 
-type SubScreen = 'main' | 'edit-profile' | 'notifications' | 'privacy' | 'version';
+type SubScreen = 'main' | 'edit-profile' | 'notifications' | 'privacy' | 'version' | 'typography';
 
 export default function AppSettings({ 
   onNavigate, 
@@ -35,7 +43,11 @@ export default function AppSettings({
   activeSub,
   setActiveSub,
   userPhoto,
-  onPhotoUpload
+  onPhotoUpload,
+  prayerTypography,
+  setPrayerTypography,
+  userNameSubtitle,
+  setUserNameSubtitle
 }: SettingsProps) {
   const [tempName, setTempName] = useState(userName);
 
@@ -60,6 +72,14 @@ export default function AppSettings({
           isToggle: true,
           value: isDarkMode,
           onAction: onToggleDarkMode
+        },
+        { 
+          id: 'typography',
+          icon: Type, 
+          label: 'Aparência da Oração', 
+          description: 'Fontes, tamanhos e negrito', 
+          color: 'text-rose-500',
+          onClick: () => setActiveSub('typography')
         },
       ]
     },
@@ -106,6 +126,32 @@ export default function AppSettings({
                   onChange={(e) => setTempName(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                 />
+             </div>
+
+             <div className="w-full space-y-3 pt-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Título/Subtítulo</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    'Fiel de Maria',
+                    'Devoto do Rosário',
+                    'Apostolo da Oração',
+                    'Discípulo de Cristo',
+                    'Coração Valente',
+                    'Buscador da Fé'
+                  ].map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setUserNameSubtitle(option)}
+                      className={`p-3 rounded-xl border font-bold text-[9px] uppercase tracking-wider transition-all active:scale-95 ${
+                        userNameSubtitle === option 
+                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 hover:border-primary/30'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
              </div>
           </div>
           
@@ -191,6 +237,92 @@ export default function AppSettings({
            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
              Ao utilizar este app, você concorda que a segurança dos seus dados locais é de sua responsabilidade através do backup do próprio smartphone.
            </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSub === 'typography') {
+    const fonts = [
+      { id: 'font-serif', label: 'Serifada (Clássica)' },
+      { id: 'font-sans', label: 'Sem Serifa (Moderna)' },
+    ];
+    const sizes = [
+      { id: 'text-xl', label: 'Pequeno' },
+      { id: 'text-2xl', label: 'Normal' },
+      { id: 'text-3xl', label: 'Grande' },
+      { id: 'text-4xl', label: 'Extra G.' },
+    ];
+
+    return (
+      <div className="flex flex-col h-full bg-white dark:bg-slate-950">
+        <div className="flex items-center p-6 border-b border-slate-100 dark:border-slate-800">
+          <button onClick={() => setActiveSub('main')} className="text-slate-400 size-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <h2 className="flex-1 text-center text-lg font-black text-slate-900 dark:text-white mr-10 uppercase tracking-widest">Aparência</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div>
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Estilo da Fonte</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {fonts.map(font => (
+                <button
+                  key={font.id}
+                  onClick={() => setPrayerTypography({ ...prayerTypography, fontFamily: font.id })}
+                  className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all ${
+                    prayerTypography.fontFamily === font.id 
+                    ? 'border-primary bg-primary/5 text-primary' 
+                    : 'border-slate-100 dark:border-slate-800 text-slate-400'
+                  } ${font.id}`}
+                >
+                  {font.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Tamanho do Texto</h3>
+             <div className="grid grid-cols-2 gap-3">
+              {sizes.map(size => (
+                <button
+                  key={size.id}
+                  onClick={() => setPrayerTypography({ ...prayerTypography, fontSize: size.id })}
+                  className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all ${
+                    prayerTypography.fontSize === size.id 
+                    ? 'border-primary bg-primary/5 text-primary' 
+                    : 'border-slate-100 dark:border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <span className={size.id}>A</span>
+                  <span className="ml-2">{size.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Texto em Negrito</p>
+              <p className="text-[10px] text-slate-400">Destacar mais as palavras</p>
+            </div>
+            <button 
+              onClick={() => setPrayerTypography({ ...prayerTypography, isBold: !prayerTypography.isBold })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${prayerTypography.isBold ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${prayerTypography.isBold ? 'translate-x-5' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-1 text-center">Prévia</h3>
+            <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-[32px] border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center text-center">
+              <p className={`${prayerTypography.fontFamily} ${prayerTypography.fontSize} ${prayerTypography.isBold ? 'font-black' : 'font-medium'} text-slate-800 dark:text-slate-200 leading-relaxed`}>
+                "Ave Maria, cheia de graça..."
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );

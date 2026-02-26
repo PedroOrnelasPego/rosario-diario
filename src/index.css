@@ -3,8 +3,11 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+  html, body {
     @apply bg-background-light text-slate-900 font-display antialiased transition-colors duration-300;
+    overscroll-behavior: none;
+    height: 100%;
+    overflow: hidden;
   }
   
   .dark body {

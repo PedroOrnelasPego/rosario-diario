@@ -26,8 +26,28 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [alarm, setAlarm] = useState({ hour: 6, minute: 30, enabled: true });
+  const [permissions, setPermissions] = useState({ notifications: false, camera: false });
   
   const avatars = [av1, av2, av3, av4, av5, av6];
+
+  const requestPermissions = async () => {
+    // Request Notifications
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setPermissions(prev => ({ ...prev, notifications: permission === 'granted' }));
+    }
+
+    // Request Camera (just to trigger system pop-up)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+      setPermissions(prev => ({ ...prev, camera: true }));
+    } catch (err) {
+      console.warn('Camera permission denied or not available:', err);
+    }
+
+    nextStep();
+  };
 
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => Math.max(1, s - 1));
@@ -42,10 +62,11 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
   };
 
   const steps = [
-    { id: 1, title: 'Bem-vindo(a)', subtitle: 'Como gostaria de ser chamado(a)?' },
-    { id: 2, title: 'Estilo do App', subtitle: 'Escolha o tema que mais lhe agrada' },
-    { id: 3, title: 'Sua Identidade', subtitle: 'Escolha um avatar ou use sua foto' },
-    { id: 4, title: 'Hábito de Oração', subtitle: 'Deseja definir um despertador?' }
+    { id: 1, title: 'Permissões', subtitle: 'Para uma melhor experiência, precisamos de algumas autorizações.' },
+    { id: 2, title: 'Bem-vindo(a)', subtitle: 'Como gostaria de ser chamado(a)?' },
+    { id: 3, title: 'Estilo do App', subtitle: 'Escolha o tema que mais lhe agrada' },
+    { id: 4, title: 'Sua Identidade', subtitle: 'Escolha um avatar ou use sua foto' },
+    { id: 5, title: 'Hábito de Oração', subtitle: 'Deseja definir um despertador?' }
   ];
 
   return (
@@ -69,10 +90,11 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
           >
             <div className="flex flex-col items-center text-center mb-10">
               <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary shadow-inner">
-                {step === 1 && <Sparkles size={32} className="animate-pulse" />}
-                {step === 2 && (isDarkMode ? <Moon size={32} /> : <Sun size={32} />)}
-                {step === 3 && <User size={32} />}
-                {step === 4 && <AlarmClock size={32} />}
+                {step === 1 && <BellOff size={32} />}
+                {step === 2 && <Sparkles size={32} className="animate-pulse" />}
+                {step === 3 && (isDarkMode ? <Moon size={32} /> : <Sun size={32} />)}
+                {step === 4 && <User size={32} />}
+                {step === 5 && <AlarmClock size={32} />}
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
                 {steps[step-1].title}
@@ -85,6 +107,34 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
             {/* Step Content */}
             <div className="min-h-[220px] flex items-center justify-center">
               {step === 1 && (
+                <div className="w-full space-y-6 text-center">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                        <BellOff size={20} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Notificações</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Para seus lembretes de oração</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                        <Camera size={20} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Câmera</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Para personalizar sua foto de perfil</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-6 leading-relaxed">
+                    Clique em continuar para autorizar os alertas e o uso da câmera.
+                  </p>
+                </div>
+              )}
+
+              {step === 2 && (
                 <div className="w-full space-y-4">
                   <input
                     autoFocus
@@ -100,7 +150,7 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                 </div>
               )}
 
-              {step === 2 && (
+              {step === 3 && (
                 <div className="grid grid-cols-2 gap-4 w-full h-full">
                   <button 
                     onClick={() => isDarkMode && onToggleDarkMode()}
@@ -123,7 +173,7 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div className="w-full flex flex-col items-center gap-8">
                   <div className="relative">
                     <div 
@@ -131,8 +181,25 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                       style={{ backgroundImage: `url('${photo || avPadrao}')` }}
                     >
                     </div>
+                    <input
+                      type="file"
+                      id="onboarding-photo-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (readerEvent) => {
+                            const content = readerEvent.target?.result as string;
+                            setPhoto(content);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
                     <button 
-                      onClick={() => alert('A troca de foto própria estará disponível em breve na tela de Perfil!')}
+                      onClick={() => document.getElementById('onboarding-photo-upload')?.click()}
                       className="absolute -bottom-1 -right-1 size-12 bg-primary border-4 border-white dark:border-slate-950 rounded-2xl flex items-center justify-center text-white shadow-xl hover:scale-110 active:scale-90 transition-all"
                     >
                       <Camera size={20} />
@@ -158,7 +225,7 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div className="w-full space-y-6">
                   <div className={`p-8 rounded-[40px] border-2 transition-all flex flex-col items-center gap-6 ${alarm.enabled ? 'bg-white dark:bg-slate-900 border-primary shadow-xl shadow-primary/5 ring-4 ring-primary/5' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-50 grayscale'}`}>
                     <div className="flex items-center gap-6 select-none">
@@ -173,11 +240,11 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                        </div>
                        <span className="text-5xl font-black text-slate-200 dark:text-slate-800">:</span>
                        <div className="flex flex-col items-center">
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute + 5) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
+                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute + 1) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
                             <ChevronUp size={24} />
                           </button>
                           <span className="text-6xl font-black text-slate-900 dark:text-white tabular-nums">{String(alarm.minute).padStart(2, '0')}</span>
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute - 5 + 60) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
+                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute - 1 + 60) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
                             <ChevronDown size={24} />
                           </button>
                        </div>
@@ -201,12 +268,12 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
       {/* Footer Navigation */}
       <div className="max-w-md mx-auto w-full space-y-4 pt-10">
         <button
-          disabled={step === 1 && !name.trim()}
-          onClick={step === 4 ? handleFinish : nextStep}
+          disabled={step === 2 && !name.trim()}
+          onClick={step === 1 ? requestPermissions : (step === 5 ? handleFinish : nextStep)}
           className="w-full bg-primary disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-300 text-white font-black py-5 rounded-[28px] shadow-2xl shadow-primary/25 flex items-center justify-center gap-3 hover:bg-primary-dark transition-all active:scale-[0.97]"
         >
-          {step === 4 ? 'Começar Minha Jornada' : 'Continuar'}
-          {step === 4 ? <Check size={22} strokeWidth={3} /> : <ArrowRight size={22} strokeWidth={3} />}
+          {step === 5 ? 'Começar Minha Jornada' : 'Continuar'}
+          {step === 5 ? <Check size={22} strokeWidth={3} /> : <ArrowRight size={22} strokeWidth={3} />}
         </button>
         
         {step > 1 && (

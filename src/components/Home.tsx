@@ -1,4 +1,4 @@
-import { Settings, AlarmClock, Flame, PlayCircle, Check, Moon, Sun, Info, X as CloseIcon, Church, BookOpen, ChevronRight } from 'lucide-react';
+import { Settings, AlarmClock, Flame, PlayCircle, Check, Moon, Sun, Info, X as CloseIcon, Church, BookOpen, ChevronRight, Lock } from 'lucide-react';
 import { Screen } from '../App';
 import { useState } from 'react';
 import { Artwork } from '../services/artService';
@@ -18,6 +18,7 @@ interface HomeProps {
   totalPrayers: number;
   dailyHistory: string[];
   dailyVerse: { text: string; reference: string } | null;
+  onOpenPremium: () => void;
 }
 
 export default function Home({ 
@@ -33,7 +34,8 @@ export default function Home({
   streak,
   totalPrayers,
   dailyHistory,
-  dailyVerse
+  dailyVerse,
+  onOpenPremium
 }: HomeProps) {
   const [showDetails, setShowDetails] = useState(false);
   
@@ -62,30 +64,33 @@ export default function Home({
   return (
     <div className="flex flex-col h-full overflow-y-auto parchment-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 pb-2">
-        <div className="flex items-center gap-3">
-          <div 
-            className="size-12 shrink-0 rounded-full border-2 border-primary/20 bg-cover bg-center bg-no-repeat shadow-lg bg-slate-100" 
-            style={{ backgroundImage: `url('${userPhoto || defaultAvatar}')` }}
-          ></div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">{dateString}</p>
-            <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">{greeting}, {userName.split(' ')[0]}</h2>
+      <div className="flex flex-col p-6 pb-2 gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div 
+              className="size-12 shrink-0 rounded-full border-2 border-primary/20 bg-cover bg-center bg-no-repeat shadow-lg bg-slate-100" 
+              style={{ backgroundImage: `url('${userPhoto || defaultAvatar}')` }}
+            ></div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">{dateString}</p>
+              <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">{greeting}, {userName.split(' ')[0]}</h2>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={onToggleDarkMode} 
-            className="flex items-center justify-center rounded-xl size-10 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all border border-slate-300/50 dark:border-slate-700"
-          >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          <button 
-            onClick={() => onNavigate('settings')} 
-            className="flex items-center justify-center rounded-xl size-10 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all border border-slate-300/50 dark:border-slate-700"
-          >
-            <Settings size={20} />
-          </button>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={onToggleDarkMode} 
+              className="flex items-center justify-center rounded-xl size-10 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all border border-slate-300/50 dark:border-slate-700"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button 
+              onClick={() => onNavigate('settings')} 
+              className="flex items-center justify-center rounded-xl size-10 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all border border-slate-300/50 dark:border-slate-700"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -140,47 +145,41 @@ export default function Home({
         </div>
       </div>
 
-      {/* Mystery Card */}
-      <div className="px-6 py-4">
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 shadow-2xl h-72 border border-slate-800/50 group">
-          {dailyArt ? (
-            <>
-              <img 
-                src={dailyArt.url} 
-                alt={dailyArt.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Tizian_041.jpg/800px-Tizian_041.jpg';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
-            </>
-          ) : (
-            <div className="absolute inset-0 w-full h-full bg-slate-800 animate-pulse flex items-center justify-center">
-               <Church className="text-slate-700 animate-bounce" size={48} />
-            </div>
-          )}
-          
-          <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col gap-1 z-10">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-1 rounded-lg bg-primary text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
-                Hoje
-              </span>
-            </div>
-            <h3 className="text-2xl font-black text-white leading-tight">{currentMystery.name}</h3>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
-              <p className="text-slate-300 text-sm italic line-clamp-1 pr-4">Arte: {dailyArt?.title || 'Sagrada Oração'}</p>
-              <button 
-                onClick={() => setShowDetails(true)}
-                className="bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-xl text-xs font-bold border border-white/20 shrink-0 hover:bg-white/20 transition-all active:scale-95 flex items-center gap-2"
-              >
-                <Info size={14} />
-                Explorar
-              </button>
+      {/* Mystery Card - Only show if online */}
+      {window.navigator.onLine && dailyArt && (
+        <div className="px-6 py-4">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 shadow-2xl h-72 border border-slate-800/50 group">
+            <img 
+              src={dailyArt.url} 
+              alt={dailyArt.title}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Tizian_041.jpg/800px-Tizian_041.jpg';
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
+            
+            <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col gap-1 z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-1 rounded-lg bg-primary text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
+                  Hoje
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white leading-tight">{currentMystery.name}</h3>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+                <p className="text-slate-300 text-sm italic line-clamp-1 pr-4">Arte: {dailyArt.title}</p>
+                <button 
+                  onClick={() => setShowDetails(true)}
+                  className="bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-xl text-xs font-bold border border-white/20 shrink-0 hover:bg-white/20 transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Info size={14} />
+                  Explorar
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
 
       {/* Details Modal */}

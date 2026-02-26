@@ -7,6 +7,11 @@ interface PrayerProps {
   onNavigate: (screen: Screen) => void;
   dailyArt: Artwork | null;
   onComplete: () => void;
+  typography: {
+    fontFamily: string;
+    fontSize: string;
+    isBold: boolean;
+  };
 }
 
 const INITIAL_PRAYERS = [
@@ -19,7 +24,7 @@ const INITIAL_PRAYERS = [
   { id: 'glory', name: 'Glória ao Pai', text: 'Glória ao Pai, ao Filho e ao Espírito Santo. Como era no princípio, agora e sempre. Amém.' },
 ];
 
-export default function Prayer({ onNavigate, dailyArt, onComplete }: PrayerProps) {
+export default function Prayer({ onNavigate, dailyArt, onComplete, typography }: PrayerProps) {
   const [step, setStep] = useState(0);
   const [showArrow, setShowArrow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -151,14 +156,14 @@ export default function Prayer({ onNavigate, dailyArt, onComplete }: PrayerProps
               className="flex-1 w-full overflow-y-auto custom-scrollbar"
             >
               <div className="min-h-full flex flex-col justify-center py-4">
-                <p className="text-slate-800 dark:text-slate-200 text-3xl font-serif italic leading-relaxed text-center px-2">
+                <p className={`text-slate-800 dark:text-slate-200 leading-relaxed text-center px-2 ${typography.fontFamily} ${typography.fontSize} ${typography.isBold ? 'font-black' : 'font-medium'}`}>
                   "{currentStep.text}"
                 </p>
               </div>
             </div>
             {showArrow && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-primary/30 animate-bounce transition-opacity duration-300 pointer-events-none">
-                <ChevronDown size={24} strokeWidth={3} />
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-primary/70 animate-bounce transition-opacity duration-300 pointer-events-none z-20">
+                <ChevronDown size={28} strokeWidth={3} />
               </div>
             )}
             <div className="h-4 shrink-0" />
