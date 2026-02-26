@@ -15,7 +15,7 @@ export default function Navigation({ currentScreen, onNavigate }: NavigationProp
   ];
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] border-t border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-3 pb-8 z-40">
+    <div className="relative w-full border-t border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-3 pb-8 z-40">
       <div className="flex items-center justify-between">
         {navItems.map((item) => {
           const Icon = item.icon;

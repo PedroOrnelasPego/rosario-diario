@@ -7,14 +7,15 @@ import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
 import { Library, PencilLine, User } from 'lucide-react';
 
-export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'diary' | 'profile' | 'edit-profile';
+export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile';
 
 import Navigation from './components/Navigation';
 import AppSettings from './components/Settings';
 import LibraryComponent from './components/Library';
 import DiaryComponent from './components/Diary';
 import ProfileComponent from './components/Profile';
-import { BibleVerse, getDailyVerse } from './services/bibleService';
+import BibleComponent from './components/Bible';
+import { BibleVerse, getDailyVerse, getPsalmOfDay } from './services/bibleService';
 
 export default function App() {
   const [isFirstTime, setIsFirstTime] = useState(() => !localStorage.getItem('rosario_user_data'));
@@ -40,6 +41,7 @@ export default function App() {
   const [streak, setStreak] = useState(0);
   const [dailyHistory, setDailyHistory] = useState<string[]>([]);
   const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null);
+  const [psalmOfDay, setPsalmOfDay] = useState<BibleVerse | null>(null);
 
   useEffect(() => {
     // Load persisted data
@@ -56,6 +58,7 @@ export default function App() {
     }
     
     getDailyVerse().then(setDailyVerse);
+    getPsalmOfDay().then(setPsalmOfDay);
 
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0];
@@ -104,6 +107,8 @@ export default function App() {
       localStorage.setItem('rosario_user_data', JSON.stringify(data));
     }
   };
+
+
 
   const variants = {
     initial: { opacity: 0, scale: 0.98 },
@@ -165,8 +170,8 @@ export default function App() {
   }
 
   return (
-    <div className={`mx-auto max-w-[430px] h-[100dvh] w-full relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-background-dark text-white' : 'bg-background-light text-slate-900'}`}>
-      <div className="h-full w-full overflow-hidden">
+    <div className={`mx-auto max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-background-dark text-white' : 'bg-background-light text-slate-900'}`}>
+      <div className="flex-1 w-full overflow-hidden relative">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentScreen}
@@ -175,7 +180,7 @@ export default function App() {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="h-full w-full"
+            className="h-full w-full flex flex-col"
           >
             {currentScreen === 'home' && (
               <Home 
@@ -228,7 +233,15 @@ export default function App() {
                 setActiveSub={setSettingsSub}
               />
             )}
-            {currentScreen === 'library' && <LibraryComponent onNavigate={setCurrentScreen} />}
+            {currentScreen === 'library' && (
+              <LibraryComponent 
+                onNavigate={setCurrentScreen} 
+                psalmOfDay={psalmOfDay}
+              />
+            )}
+            {currentScreen === 'bible' && (
+              <BibleComponent onNavigate={setCurrentScreen} />
+            )}
             {currentScreen === 'diary' && <DiaryComponent onNavigate={setCurrentScreen} />}
             {currentScreen === 'profile' && (
               <ProfileComponent 
@@ -253,7 +266,7 @@ export default function App() {
       </div>
       
       {/* Footer Navigation constant across all screens, except during prayer */}
-      {currentScreen !== 'prayer' && (
+      {!['prayer', 'bible', 'onboarding'].includes(currentScreen) && (
         <Navigation currentScreen={currentScreen} onNavigate={setCurrentScreen} />
       )}
     </div>

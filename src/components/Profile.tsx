@@ -36,7 +36,7 @@ export default function ProfileComponent({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-50 dark:from-slate-950 to-transparent"></div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 -mt-16 pb-40">
+      <div className="flex-1 overflow-y-auto px-6 -mt-16">
         {/* Profile Info */}
         <div className="flex flex-col items-center mb-10">
           <div className="relative mb-4">

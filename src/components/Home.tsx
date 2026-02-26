@@ -60,7 +60,7 @@ export default function Home({
   const defaultAvatar = avPadrao;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-40 parchment-bg">
+    <div className="flex flex-col h-full overflow-y-auto parchment-bg">
       {/* Header */}
       <div className="flex items-center justify-between p-6 pb-2">
         <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export default function Home({
 
 
       {/* This Week */}
-      <div className="px-6 py-4 pb-40">
+      <div className="px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Sua Jornada</h4>
           <span className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full capitalize">
