@@ -75,20 +75,30 @@ export default function ProfileComponent({
             {userNameSubtitle}
           </p>
           
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 w-full">
             <button 
               onClick={() => onNavigate('edit-profile')}
-              className="px-6 py-2 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-95"
+              className="flex-1 py-2 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-95"
             >
               Editar Perfil
             </button>
             <button 
               onClick={() => onNavigate('settings')}
-              className="size-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 shadow-sm hover:text-primary transition-colors"
+              className="size-9 shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 shadow-sm hover:text-primary transition-colors active:scale-95"
             >
               <Settings size={18} />
             </button>
           </div>
+
+          <button 
+            onClick={onOpenDonation}
+            className="w-full mt-3 bg-rose-50 dark:bg-rose-900/20 py-3 rounded-xl border border-rose-100/50 dark:border-rose-900/40 flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+             <Heart size={14} fill={isSupporter ? "currentColor" : "none"} className={isSupporter ? "text-rose-500" : "text-rose-400"} />
+             <span className={`text-[10px] font-black uppercase tracking-widest ${isSupporter ? 'text-rose-600 dark:text-rose-400' : 'text-rose-600 dark:text-rose-400'}`}>
+               {isSupporter ? 'Apoiador Oficial' : 'Fazer uma Doação'}
+             </span>
+          </button>
         </div>
 
         {/* Stats Grid */}
@@ -177,23 +187,6 @@ export default function ProfileComponent({
           </button>
         </div>
 
-        {/* Donation Invite */}
-        <button 
-          onClick={onOpenDonation}
-          className="w-full mb-6 bg-rose-50 dark:bg-rose-900/20 p-6 rounded-[32px] border border-rose-100/50 dark:border-rose-900/40 flex flex-col items-center gap-3 active:scale-[0.98] transition-all group"
-        >
-           <div className={`size-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${isSupporter ? 'bg-rose-500 text-white shadow-rose-200 dark:shadow-none' : 'bg-white dark:bg-slate-800 text-rose-500'}`}>
-             <Heart size={24} fill="currentColor" />
-           </div>
-           <div className="text-center">
-             <h4 className="text-sm font-black text-rose-600 dark:text-rose-400">
-               {isSupporter ? 'Você é um Apoiador!' : 'Apoie o Rosário Diário'}
-             </h4>
-             <p className="text-[10px] font-medium text-rose-400/80 dark:text-rose-500/80">
-               {isSupporter ? 'Sua ajuda faz toda a diferença para o projeto' : 'Sua doação nos ajuda a manter o app gratuito'}
-             </p>
-           </div>
-        </button>
       </div>
     </div>
   );

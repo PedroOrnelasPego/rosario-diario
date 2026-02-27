@@ -24,6 +24,9 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         Intent i = new Intent(context, AlarmActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        if (intent.hasExtra("soundUri")) {
+            i.putExtra("soundUri", intent.getStringExtra("soundUri"));
+        }
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
             context,

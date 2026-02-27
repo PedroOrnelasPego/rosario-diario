@@ -1,6 +1,6 @@
 import { LocalNotifications, ScheduleOptions, LocalNotificationSchema } from '@capacitor/local-notifications';
 
-export const scheduleAlarms = async (alarms: { hour: number; minute: number; enabled: boolean }[]) => {
+export const scheduleAlarms = async (alarms: { hour: number; minute: number; enabled: boolean }[], alarmSound: string) => {
   try {
     const navApp = (window as any).NativeApp;
     if (navApp) {
@@ -11,7 +11,7 @@ export const scheduleAlarms = async (alarms: { hour: number; minute: number; ena
       
       alarms.forEach((alarm, i) => {
         if (alarm.enabled && i < 3) {
-          navApp.setAlarm(i, alarm.hour, alarm.minute);
+          navApp.setAlarm(i, alarm.hour, alarm.minute, alarmSound);
           console.log(`Native Alarm scheduled for ${alarm.hour}:${alarm.minute} at index ${i}`);
         }
       });

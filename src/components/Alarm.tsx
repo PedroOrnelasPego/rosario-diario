@@ -17,12 +17,29 @@ export default function Alarm({ onNavigate, alarms, setAlarms, sound, setSound }
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const sounds = [
+  const [sounds, setSounds] = useState([
     { name: 'Gregoriano', url: '/sounds/gregoriano.mp3' },
     { name: 'Sinos', url: '/sounds/sinos.mp3' },
     { name: 'Natureza', url: '/sounds/natureza.mp3' },
     { name: 'Harpa', url: '/sounds/harpa.mp3' }
-  ];
+  ]);
+
+  useEffect(() => {
+    const navApp = (window as any).NativeApp;
+    if (navApp && navApp.getSystemRingtones) {
+      try {
+        const ringtonesStr = navApp.getSystemRingtones();
+        if (ringtonesStr) {
+          const sysRingtones = JSON.parse(ringtonesStr);
+          if (sysRingtones.length > 0) {
+            setSounds(sysRingtones);
+            // Se o som atual não estiver na lista (ex: estava usando MP3 e foi pro Android), 
+            // não vamos sobrescrever agora pra não causar loop, mas ele vai selecionar o primeiro ao clicar em algo
+          }
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   const adjustHour = async (delta: number) => {
     if (alarms.length === 0) return;
@@ -81,11 +98,11 @@ export default function Alarm({ onNavigate, alarms, setAlarms, sound, setSound }
       if (vibrate) {
         try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) {}
       }
+      const selectedSound = sounds.find(s => s.name === sound);
       if (navApp) {
-        navApp.playRingtonePreview();
+        navApp.playRingtonePreview(selectedSound ? selectedSound.url : '');
         setTimeout(() => setIsPreviewing(false), 5000); // Auto stop preview after 5s
       } else {
-        const selectedSound = sounds.find(s => s.name === sound);
         if (selectedSound) {
           const audio = document.getElementById('preview-audio') as HTMLAudioElement;
           if (audio) {
@@ -171,22 +188,22 @@ export default function Alarm({ onNavigate, alarms, setAlarms, sound, setSound }
           <div className="flex justify-center items-center gap-4 mb-10 select-none">
             {/* Hours */}
             <div className="flex flex-col items-center gap-2">
-              <button onClick={() => adjustHour(-1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
+              <button onClick={() => adjustHour(1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
               <div className="bg-white dark:bg-slate-900 size-24 rounded-[32px] flex items-center justify-center border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <span className="text-4xl font-black text-slate-900 dark:text-white">{String(alarms[selectedIdx].hour).padStart(2, '0')}</span>
               </div>
-              <button onClick={() => adjustHour(1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
+              <button onClick={() => adjustHour(-1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
             </div>
             
             <div className="text-4xl font-black text-primary animate-pulse opacity-30">:</div>
             
             {/* Minutes */}
             <div className="flex flex-col items-center gap-2">
-              <button onClick={() => adjustMinute(-1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
+              <button onClick={() => adjustMinute(1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="-rotate-90" /></button>
               <div className="bg-white dark:bg-slate-900 size-24 rounded-[32px] flex items-center justify-center border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
                 <span className="text-4xl font-black text-slate-900 dark:text-white">{String(alarms[selectedIdx].minute).padStart(2, '0')}</span>
               </div>
-              <button onClick={() => adjustMinute(1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
+              <button onClick={() => adjustMinute(-1)} className="text-slate-300 dark:text-slate-700 hover:text-primary transition-colors"><ChevronRight size={32} className="rotate-90" /></button>
             </div>
           </div>
         )}

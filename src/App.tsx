@@ -13,6 +13,15 @@ import { Artwork, getDailyArtImage } from './services/artService';
 import { 
   Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon
 } from 'lucide-react';
+import av1 from './assets/avatares/1.png';
+import av2 from './assets/avatares/2.png';
+import av3 from './assets/avatares/3.png';
+import av4 from './assets/avatares/4.png';
+import av5 from './assets/avatares/5.png';
+import av6 from './assets/avatares/6.png';
+import av7 from './assets/avatares/7.png';
+
+const avatars = [av1, av2, av3, av4, av5, av6, av7];
 
 // Helper Components for Modals
 const PremiumFeatureItem = ({ icon: Icon, title, description }: any) => (
@@ -153,10 +162,18 @@ export default function App() {
     localStorage.setItem('rosario_notifications_config', JSON.stringify(notifications));
   }, [notifications]);
 
-  // Handle Alarm Scheduling
   useEffect(() => {
-    scheduleAlarms(alarms);
-  }, [alarms]);
+    scheduleAlarms(alarms, alarmSound);
+    const savedData = localStorage.getItem('rosario_user_data');
+    if (savedData && !isFirstTime) {
+      try {
+        const data = JSON.parse(savedData);
+        data.alarms = alarms;
+        data.alarmSound = alarmSound;
+        localStorage.setItem('rosario_user_data', JSON.stringify(data));
+      } catch (e) {}
+    }
+  }, [alarms, alarmSound, isFirstTime]);
 
   useEffect(() => {
     scheduleNotifications(notifications.reminders || notifications.dailyMystery);
@@ -183,6 +200,10 @@ export default function App() {
         setAlarms(data.alarms);
       } else if (data.alarm) {
         setAlarms([data.alarm]);
+      }
+      
+      if (data.alarmSound) {
+        setAlarmSound(data.alarmSound);
       }
       
       setTotalPrayers(data.totalPrayers || 0);
@@ -304,6 +325,18 @@ export default function App() {
     } finally {
       setIsPhotoPromptOpen(false);
     }
+  };
+
+  const handleSelectAvatar = (avatarUrl: string) => {
+    setPhotoTarget('profile');
+    setUserPhoto(avatarUrl);
+    const savedData = localStorage.getItem('rosario_user_data');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      parsed.photo = avatarUrl;
+      localStorage.setItem('rosario_user_data', JSON.stringify(parsed));
+    }
+    setIsPhotoPromptOpen(false);
   };
 
   if (isFirstTime) {
@@ -490,7 +523,13 @@ export default function App() {
                         Assinar Agora
                       </button>
                       
-                      <button className="w-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold py-4 rounded-[24px] flex items-center justify-center gap-2 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-sm">
+                      <button 
+                        onClick={() => {
+                          setIsPremiumModalOpen(false);
+                          setTimeout(() => setIsDonationModalOpen(true), 150);
+                        }}
+                        className="w-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold py-4 rounded-[24px] flex items-center justify-center gap-2 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-sm"
+                      >
                         <Heart size={18} fill="currentColor" className="opacity-80" />
                         Fazer uma Doação Única
                       </button>
@@ -669,7 +708,21 @@ export default function App() {
                 <div className="flex flex-col items-center mb-2">
                   <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mb-4"></div>
                   <h3 className="text-xl font-black text-slate-900 dark:text-white">Foto de Perfil</h3>
-                  <p className="text-xs text-slate-500 font-medium">Escolha de onde quer enviar a sua foto</p>
+                  <p className="text-xs text-slate-500 font-medium text-center">Escolha um avatar ou envie sua própria foto</p>
+                </div>
+
+                <div className="mb-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Avatares Prontos</p>
+                  <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar snap-x px-1">
+                    {avatars.map((av, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => handleSelectAvatar(av)}
+                        className={`size-16 shrink-0 rounded-full border-4 shadow-sm bg-slate-100 dark:bg-slate-800 bg-cover bg-center snap-center transition-all ${userPhoto === av ? 'border-primary shadow-primary/20' : 'border-white dark:border-slate-900 hover:border-primary/50'}`}
+                        style={{ backgroundImage: `url('${av}')` }}
+                      ></button>
+                    ))}
+                  </div>
                 </div>
                 
                 <div className="flex flex-col gap-3">

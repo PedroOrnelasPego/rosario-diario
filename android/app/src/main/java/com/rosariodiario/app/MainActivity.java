@@ -56,9 +56,33 @@ public class MainActivity extends BridgeActivity {
         WebAppInterface(Context c) { mContext = c; }
 
         @JavascriptInterface
-        public void playRingtonePreview() {
+        public String getSystemRingtones() {
+            org.json.JSONArray array = new org.json.JSONArray();
+            android.media.RingtoneManager rm = new android.media.RingtoneManager(mContext);
+            rm.setType(android.media.RingtoneManager.TYPE_ALARM);
+            android.database.Cursor cursor = rm.getCursor();
+            if (cursor != null) {
+                int count = 0;
+                while (cursor.moveToNext() && count < 4) {
+                    try {
+                        org.json.JSONObject obj = new org.json.JSONObject();
+                        String title = cursor.getString(android.media.RingtoneManager.TITLE_COLUMN_INDEX);
+                        String uri = cursor.getString(android.media.RingtoneManager.URI_COLUMN_INDEX) + "/" + cursor.getString(android.media.RingtoneManager.ID_COLUMN_INDEX);
+                        obj.put("name", title);
+                        obj.put("url", uri);
+                        array.put(obj);
+                        count++;
+                    } catch(Exception e) {}
+                }
+                cursor.close();
+            }
+            return array.toString();
+        }
+
+        @JavascriptInterface
+        public void playRingtonePreview(String soundUri) {
             stopRingtonePreview();
-            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            Uri notification = soundUri != null && !soundUri.isEmpty() ? Uri.parse(soundUri) : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             currentPreview = RingtoneManager.getRingtone(mContext, notification);
             if (currentPreview != null) {
                 currentPreview.play();
@@ -73,9 +97,10 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
-        public void setAlarm(int id, int hour, int minute) {
+        public void setAlarm(int id, int hour, int minute, String soundUri) {
             if (id < 0 || id > 2) return;
             Intent intent = new Intent(mContext, AlarmReceiver.class);
+            intent.putExtra("soundUri", soundUri);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, id, intent, 
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 

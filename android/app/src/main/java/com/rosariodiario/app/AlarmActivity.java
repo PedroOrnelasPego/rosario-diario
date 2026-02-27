@@ -50,7 +50,8 @@ public class AlarmActivity extends Activity {
     }
 
     private void startAlarmSound() {
-        Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        String soundUriStr = getIntent().getStringExtra("soundUri");
+        Uri alarmUri = soundUriStr != null && !soundUriStr.isEmpty() ? Uri.parse(soundUriStr) : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (alarmUri == null) {
             alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         }
