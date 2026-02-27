@@ -37,6 +37,10 @@ subprojects {
             if (details.requested.group == 'androidx.core' && details.requested.name == 'core-ktx') {
                 details.useVersion '1.13.1'
             }
+            // Forçar versão do lifecycle para evitar corrupção de resolução
+            if (details.requested.group == 'androidx.lifecycle') {
+                details.useVersion '2.6.2'
+            }
         }
     }
     // Fix for Duplicate class kotlin.collections.jdk8.CollectionsJDK8Kt
