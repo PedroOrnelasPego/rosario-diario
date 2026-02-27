@@ -1,6 +1,7 @@
 import { ChevronLeft, Volume2, RotateCw, Vibrate, BookOpen, ChevronRight, AlarmClock } from 'lucide-react';
 import { Screen } from '../App';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 interface AlarmProps {
   onNavigate: (screen: Screen) => void;
@@ -18,23 +19,25 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const sounds = [
-    { name: 'Gregoriano', url: 'https://cdn.pixabay.com/audio/2022/03/15/audio_736631620c.mp3' },
-    { name: 'Sinos', url: 'https://cdn.pixabay.com/audio/2022/03/10/audio_5e024220b2.mp3' },
-    { name: 'Natureza', url: 'https://cdn.pixabay.com/audio/2022/01/18/audio_20668f4e24.mp3' },
-    { name: 'Harpa', url: 'https://cdn.pixabay.com/audio/2021/11/25/audio_cbb94d36e4.mp3' }
+    { name: 'Gregoriano', url: '/sounds/gregoriano.mp3' },
+    { name: 'Sinos', url: '/sounds/sinos.mp3' },
+    { name: 'Natureza', url: '/sounds/natureza.mp3' },
+    { name: 'Harpa', url: '/sounds/harpa.mp3' }
   ];
 
-  const adjustHour = (delta: number) => {
+  const adjustHour = async (delta: number) => {
     let newHour = (time.hour + delta + 24) % 24;
     setTime({ ...time, hour: newHour });
+    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch (e) {}
   };
 
-  const adjustMinute = (delta: number) => {
+  const adjustMinute = async (delta: number) => {
     let newMinute = (time.minute + delta + 60) % 60;
     setTime({ ...time, hour: time.hour, minute: newMinute });
+    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch (e) {}
   };
 
-  const togglePreview = () => {
+  const togglePreview = async () => {
     if (isPreviewing) {
       const audio = document.getElementById('preview-audio') as HTMLAudioElement;
       if (audio) {
@@ -46,10 +49,16 @@ export default function Alarm({ onNavigate, time, setTime, sound, setSound, enab
       const selectedSound = sounds.find(s => s.name === sound);
       if (selectedSound) {
         setIsPreviewing(true);
+        if (vibrate) {
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+        }
         const audio = document.getElementById('preview-audio') as HTMLAudioElement;
         if (audio) {
           audio.src = selectedSound.url;
-          audio.play().catch(e => console.error("Error playing audio:", e));
+          audio.play().catch(e => {
+            console.error("Error playing audio:", e);
+            setIsPreviewing(false);
+          });
           
           audio.onended = () => setIsPreviewing(false);
         }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Rosário Diário</string>
+    <string name="title_activity_main">Rosário Diário</string>
+    <string name="package_name">com.rosariodiario.app</string>
+    <string name="custom_url_scheme">com.rosariodiario.app</string>
+</resources>

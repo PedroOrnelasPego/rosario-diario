@@ -2,6 +2,7 @@ import { X, CircleDot, ChevronDown } from 'lucide-react';
 import { Screen } from '../App';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Artwork, getMysteryArtList } from '../services/artService';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 interface PrayerProps {
   onNavigate: (screen: Screen) => void;
@@ -88,10 +89,17 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, typography }:
 
   const currentStep = getStepData();
 
-  const handleNext = () => {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(50);
+  const handleNext = async () => {
+    // Native Vibration
+    try {
+      await Haptics.impact({ style: ImpactStyle.Medium });
+    } catch (e) {
+      console.warn("Haptics not available");
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
     }
+    
     if (step < totalSteps - 1) {
       setStep(s => s + 1);
     } else {

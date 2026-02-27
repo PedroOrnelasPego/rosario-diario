@@ -1,7 +1,8 @@
-import { Book, Lock, ChevronRight, Search, FileText, X, BookOpen, ExternalLink } from 'lucide-react';
+import { Book, Lock, ChevronRight, X, BookOpen } from 'lucide-react';
 import { Screen } from '../App';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BibleVerse } from '../services/bibleService';
+import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
 
 interface LibraryProps {
   onNavigate: (screen: Screen) => void;
@@ -94,6 +95,31 @@ const ANGELUS_TEXT = [
 
 export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium }: LibraryProps) {
   const [selectedText, setSelectedText] = useState<{ title: string; content: string[] } | null>(null);
+
+  useEffect(() => {
+    const showAd = async () => {
+      try {
+        await AdMob.initialize({
+          initializeForTesting: true,
+        });
+
+        await AdMob.showBanner({
+          adId: 'ca-app-pub-3940256099942544/6300978111', // Testing ID
+          adSize: BannerAdSize.BANNER,
+          position: BannerAdPosition.BOTTOM_CENTER,
+          margin: 60 // Try to push it above navigation
+        });
+      } catch (e) {
+        console.error("AdMob error:", e);
+      }
+    };
+
+    showAd();
+
+    return () => {
+      AdMob.hideBanner().catch(console.error);
+    };
+  }, []);
 
   const categories = [
     { title: 'Livros e Textos', id: 'texts', icon: Book, count: 0, color: 'bg-slate-200 dark:bg-slate-800', disabled: true },

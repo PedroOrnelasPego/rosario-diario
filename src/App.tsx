@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { AdMob, BannerAdSize, BannerAdPosition, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
 import Home from './components/Home';
 import Prayer from './components/Prayer';
 import Alarm from './components/Alarm';
@@ -66,6 +71,7 @@ import DiaryComponent from './components/Diary';
 import ProfileComponent from './components/Profile';
 import BibleComponent from './components/Bible';
 import { BibleVerse, getDailyVerse, getPsalmOfDay } from './services/bibleService';
+import { scheduleAlarm } from './services/notificationService';
 
 export default function App() {
   const [isFirstTime, setIsFirstTime] = useState(() => !localStorage.getItem('rosario_user_data'));
@@ -110,9 +116,37 @@ export default function App() {
     };
   });
 
+  // Request permissions and manage status bar on mount
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        // Set Status Bar Style based on theme
+        await StatusBar.setStyle({ style: isDarkMode ? Style.Dark : Style.Light });
+        
+        // Android specific: color the bar to avoid gray
+        if (window.navigator.userAgent.includes('Android')) {
+          await StatusBar.setBackgroundColor({ color: isDarkMode ? '#020617' : '#f8fafc' });
+        }
+
+        const status = await LocalNotifications.checkPermissions();
+        if (status.display === 'prompt') {
+          await LocalNotifications.requestPermissions();
+        }
+      } catch (e) {
+        console.warn("Init app native features failed", e);
+      }
+    };
+    initApp();
+  }, [isDarkMode]);
+
   useEffect(() => {
     localStorage.setItem('rosario_prayer_typography', JSON.stringify(prayerTypography));
   }, [prayerTypography]);
+
+  // Handle Alarm Scheduling
+  useEffect(() => {
+    scheduleAlarm(alarmTime.hour, alarmTime.minute, alarmEnabled);
+  }, [alarmTime, alarmEnabled]);
 
   useEffect(() => {
     localStorage.setItem('rosario_is_supporter', String(isSupporter));
@@ -187,7 +221,12 @@ export default function App() {
     }
   };
 
-
+  const toggleDarkMode = async () => {
+    setIsDarkMode(!isDarkMode);
+    try {
+      await Haptics.impact({ style: ImpactStyle.Light });
+    } catch (e) {}
+  };
 
   const variants = {
     initial: { opacity: 0, scale: 0.98 },
@@ -213,44 +252,47 @@ export default function App() {
     setIsFirstTime(false);
   };
 
-  const handlePhotoUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (readerEvent) => {
-          const content = readerEvent.target?.result as string;
-          setUserPhoto(content);
-          // Update localStorage
-          const savedData = localStorage.getItem('rosario_user_data');
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            parsed.photo = content;
-            localStorage.setItem('rosario_user_data', JSON.stringify(parsed));
-          }
-        };
-        reader.readAsDataURL(file);
+  const handlePhotoUpload = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt, // Allows user to choose between Camera or Photos
+        promptLabelHeader: 'Foto de Perfil',
+        promptLabelPhoto: 'Escolher da Galeria',
+        promptLabelPicture: 'Tirar Foto'
+      });
+
+      if (image && image.dataUrl) {
+        setUserPhoto(image.dataUrl);
+        // Update localStorage
+        const savedData = localStorage.getItem('rosario_user_data');
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          parsed.photo = image.dataUrl;
+          localStorage.setItem('rosario_user_data', JSON.stringify(parsed));
+        }
       }
-    };
-    input.click();
+    } catch (error) {
+      console.error('Error taking photo:', error);
+    }
   };
 
   if (isFirstTime) {
     return (
       <Onboarding 
         isDarkMode={isDarkMode} 
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
+        onToggleDarkMode={toggleDarkMode} 
         onComplete={handleOnboardingComplete} 
+        onPhotoUpload={handlePhotoUpload}
       />
     );
   }
 
   return (
-    <div className={`mx-auto max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-background-dark text-white' : 'bg-background-light text-slate-900'}`}>
-      <div className="flex-1 w-full overflow-hidden relative">
+    <div className={`mx-auto max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <main className="flex-1 w-full overflow-y-auto relative flex flex-col custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentScreen}
@@ -267,7 +309,7 @@ export default function App() {
                 onOpenPremium={() => setIsPremiumModalOpen(true)}
                 dailyArt={dailyArt} 
                 isDarkMode={isDarkMode} 
-                onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
+                onToggleDarkMode={toggleDarkMode} 
                 alarmTime={alarmTime}
                 alarmEnabled={alarmEnabled}
                 setAlarmEnabled={setAlarmEnabled}
@@ -302,7 +344,7 @@ export default function App() {
               <AppSettings 
                 onNavigate={setCurrentScreen} 
                 isDarkMode={isDarkMode} 
-                onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
+                onToggleDarkMode={toggleDarkMode} 
                 userName={userName}
                 setUserName={setUserName}
                 userPhoto={userPhoto}
@@ -579,7 +621,7 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
       
       {/* Footer Navigation constant across all screens, except during prayer */}
       {!['prayer', 'bible', 'onboarding'].includes(currentScreen) && (

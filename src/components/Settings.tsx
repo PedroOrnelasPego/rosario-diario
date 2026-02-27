@@ -93,7 +93,7 @@ export default function AppSettings({
     {
       title: 'Aplicativo',
       items: [
-        { id: 'version', icon: Info, label: 'Versão', description: 'v1.2.5 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
+        { id: 'version', icon: Info, label: 'Versão', description: 'v1.0.4 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
       ]
     }
   ];
@@ -342,7 +342,7 @@ export default function AppSettings({
              <Info size={40} />
            </div>
            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Rosário Diário</h3>
-           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.2.5 Gold Edition</p>
+           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.0.4 Gold Edition</p>
            <div className="space-y-4 max-w-xs">
              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
                <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>

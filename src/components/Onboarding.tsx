@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, ArrowRight, AlarmClock, User, Check, Sparkles, Moon, Sun, BellOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Camera as CapCamera } from '@capacitor/camera';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 import av1 from '../assets/avatares/1.png';
 import av2 from '../assets/avatares/2.png';
@@ -13,6 +15,7 @@ import avPadrao from '../assets/avatares/padrao.png';
 interface OnboardingProps {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  onPhotoUpload: () => Promise<void>;
   onComplete: (data: { 
     name: string; 
     photo: string | null; 
@@ -21,31 +24,32 @@ interface OnboardingProps {
   }) => void;
 }
 
-export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }: OnboardingProps) {
+export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload, onComplete }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [alarm, setAlarm] = useState({ hour: 6, minute: 30, enabled: true });
-  const [permissions, setPermissions] = useState({ notifications: false, camera: false });
   
   const avatars = [av1, av2, av3, av4, av5, av6];
 
   const requestPermissions = async () => {
-    // Request Notifications
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      setPermissions(prev => ({ ...prev, notifications: permission === 'granted' }));
-    }
-
-    // Request Camera (just to trigger system pop-up)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach(track => track.stop());
-      setPermissions(prev => ({ ...prev, camera: true }));
-    } catch (err) {
-      console.warn('Camera permission denied or not available:', err);
-    }
+      // Request Notifications
+      const notifStatus = await LocalNotifications.checkPermissions();
+      if (notifStatus.display !== 'granted') {
+        const notifPerm = await LocalNotifications.requestPermissions();
+        console.log('Notification permission result:', notifPerm.display);
+      }
 
+      // Request Camera
+      const camStatus = await CapCamera.checkPermissions();
+      if (camStatus.camera !== 'granted') {
+        const camPerm = await CapCamera.requestPermissions();
+        console.log('Camera permission result:', camPerm.camera);
+      }
+    } catch (e) {
+      console.error("Error requesting native permissions:", e);
+    }
     nextStep();
   };
 
@@ -181,25 +185,18 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onComplete }:
                       style={{ backgroundImage: `url('${photo || avPadrao}')` }}
                     >
                     </div>
-                    <input
-                      type="file"
-                      id="onboarding-photo-upload"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (readerEvent) => {
-                            const content = readerEvent.target?.result as string;
-                            setPhoto(content);
-                          };
-                          reader.readAsDataURL(file);
+                    <button 
+                      onClick={async () => {
+                        await onPhotoUpload();
+                        // Re-fetch photo from localStorage if needed, or better, 
+                        // App.tsx should pass the updated userPhoto back if we are using it here.
+                        // For simplicity, we'll let the user pick from avatars or App state updates.
+                        const savedData = localStorage.getItem('rosario_user_data');
+                        if (savedData) {
+                          const parsed = JSON.parse(savedData);
+                          if (parsed.photo) setPhoto(parsed.photo);
                         }
                       }}
-                    />
-                    <button 
-                      onClick={() => document.getElementById('onboarding-photo-upload')?.click()}
                       className="absolute -bottom-1 -right-1 size-12 bg-primary border-4 border-white dark:border-slate-950 rounded-2xl flex items-center justify-center text-white shadow-xl hover:scale-110 active:scale-90 transition-all"
                     >
                       <Camera size={20} />

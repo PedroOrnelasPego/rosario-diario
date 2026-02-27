@@ -62,7 +62,7 @@ export default function Home({
   const defaultAvatar = avPadrao;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto parchment-bg">
+    <div className="flex flex-col h-full overflow-y-auto parchment-bg pt-4">
       {/* Header */}
       <div className="flex flex-col p-6 pb-2 gap-4">
         <div className="flex items-center justify-between">
