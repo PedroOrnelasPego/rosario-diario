@@ -180,7 +180,7 @@ export default function ProfileComponent({
         {/* Donation Invite */}
         <button 
           onClick={onOpenDonation}
-          className="w-full bg-rose-50 dark:bg-rose-900/20 p-6 rounded-[32px] border border-rose-100/50 dark:border-rose-900/40 flex flex-col items-center gap-3 active:scale-[0.98] transition-all group"
+          className="w-full mb-6 bg-rose-50 dark:bg-rose-900/20 p-6 rounded-[32px] border border-rose-100/50 dark:border-rose-900/40 flex flex-col items-center gap-3 active:scale-[0.98] transition-all group"
         >
            <div className={`size-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${isSupporter ? 'bg-rose-500 text-white shadow-rose-200 dark:shadow-none' : 'bg-white dark:bg-slate-800 text-rose-500'}`}>
              <Heart size={24} fill="currentColor" />

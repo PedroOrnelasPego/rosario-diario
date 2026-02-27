@@ -10,6 +10,7 @@ import av3 from '../assets/avatares/3.png';
 import av4 from '../assets/avatares/4.png';
 import av5 from '../assets/avatares/5.png';
 import av6 from '../assets/avatares/6.png';
+import av7 from '../assets/avatares/7.png';
 import avPadrao from '../assets/avatares/padrao.png';
 
 interface OnboardingProps {
@@ -19,7 +20,8 @@ interface OnboardingProps {
   onComplete: (data: { 
     name: string; 
     photo: string | null; 
-    alarm: { hour: number; minute: number; enabled: boolean };
+    alarms: { hour: number; minute: number; enabled: boolean }[];
+    notifications: boolean;
     theme: 'light' | 'dark';
   }) => void;
 }
@@ -29,8 +31,9 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [alarm, setAlarm] = useState({ hour: 6, minute: 30, enabled: true });
+  const [useNotifications, setUseNotifications] = useState(true);
   
-  const avatars = [av1, av2, av3, av4, av5, av6];
+  const avatars = [av1, av2, av3, av4, av5, av6, av7];
 
   const requestPermissions = async () => {
     try {
@@ -60,7 +63,8 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
     onComplete({ 
       name, 
       photo, 
-      alarm, 
+      alarms: [alarm],
+      notifications: useNotifications,
       theme: isDarkMode ? 'dark' : 'light' 
     });
   };
@@ -124,15 +128,24 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
                       <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                        <Camera size={20} />
+                        <BellOff size={20} />
                       </div>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Câmera</p>
-                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Para personalizar sua foto de perfil</p>
+                      <div className="text-left flex-1">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Mensagens Inspiradoras</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Receber lembretes de oração durante o dia</p>
                       </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUseNotifications(!useNotifications);
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${useNotifications ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${useNotifications ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                      </button>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-6 leading-relaxed">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-6 leading-relaxed mt-4">
                     Clique em continuar para autorizar os alertas e o uso da câmera.
                   </p>
                 </div>

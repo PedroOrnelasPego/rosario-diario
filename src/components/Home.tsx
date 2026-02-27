@@ -9,9 +9,8 @@ interface HomeProps {
   dailyArt: Artwork | null;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  alarmTime: { hour: number; minute: number };
-  alarmEnabled: boolean;
-  setAlarmEnabled: (enabled: boolean) => void;
+  alarms: { hour: number; minute: number; enabled: boolean }[];
+  setAlarms: (alarms: { hour: number; minute: number; enabled: boolean }[]) => void;
   userName: string;
   userPhoto: string | null;
   streak: number;
@@ -26,9 +25,8 @@ export default function Home({
   dailyArt, 
   isDarkMode, 
   onToggleDarkMode, 
-  alarmTime, 
-  alarmEnabled, 
-  setAlarmEnabled, 
+  alarms, 
+  setAlarms, 
   userName, 
   userPhoto,
   streak,
@@ -123,16 +121,20 @@ export default function Home({
           </div>
           <div className="flex items-center justify-between w-full">
             <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {String(alarmTime.hour).padStart(2, '0')}:{String(alarmTime.minute).padStart(2, '0')}
+              {alarms[0] ? `${String(alarms[0].hour).padStart(2, '0')}:${String(alarms[0].minute).padStart(2, '0')}` : '00:00'}
             </p>
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setAlarmEnabled(!alarmEnabled);
+                if (alarms.length > 0) {
+                  const newAlarms = [...alarms];
+                  newAlarms[0].enabled = !newAlarms[0].enabled;
+                  setAlarms(newAlarms);
+                }
               }}
-              className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter transition-all ${alarmEnabled ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
+              className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter transition-all ${alarms[0]?.enabled ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
             >
-              {alarmEnabled ? 'ON' : 'OFF'}
+              {alarms[0]?.enabled ? 'ON' : 'OFF'}
             </button>
           </div>
         </div>

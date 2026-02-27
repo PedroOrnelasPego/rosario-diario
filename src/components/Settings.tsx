@@ -16,6 +16,7 @@ interface SettingsProps {
     reminders: boolean;
     audioAlerts: boolean;
     dailyMystery: boolean;
+    prayerHaptics?: boolean;
   };
   setNotifications: (notifs: any) => void;
   activeSub: SubScreen;
@@ -93,7 +94,7 @@ export default function AppSettings({
     {
       title: 'Aplicativo',
       items: [
-        { id: 'version', icon: Info, label: 'Versão', description: 'v1.0.4 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
+        { id: 'version', icon: Info, label: 'Versão', description: 'v1.0.7 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
       ]
     }
   ];
@@ -118,6 +119,7 @@ export default function AppSettings({
                   <Camera size={14} />
                 </button>
              </div>
+             <p className="text-primary font-black text-xs uppercase tracking-widest mb-6 -mt-2">{userNameSubtitle}</p>
              <div className="w-full space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
                 <input 
@@ -129,7 +131,7 @@ export default function AppSettings({
              </div>
 
              <div className="w-full space-y-3 pt-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Título/Subtítulo</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subtítulo</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     'Fiel de Maria',
@@ -302,7 +304,7 @@ export default function AppSettings({
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 mt-3">
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Texto em Negrito</p>
               <p className="text-[10px] text-slate-400">Destacar mais as palavras</p>
@@ -312,6 +314,19 @@ export default function AppSettings({
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${prayerTypography.isBold ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
             >
               <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${prayerTypography.isBold ? 'translate-x-5' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 mt-3">
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Vibração (Haptics)</p>
+              <p className="text-[10px] text-slate-400">Sentir toque mudando de conta</p>
+            </div>
+            <button 
+              onClick={() => setNotifications({ ...notifications, prayerHaptics: notifications.prayerHaptics === false ? true : false })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${notifications.prayerHaptics !== false ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${notifications.prayerHaptics !== false ? 'translate-x-5' : 'translate-x-0'}`}></span>
             </button>
           </div>
 
@@ -342,7 +357,7 @@ export default function AppSettings({
              <Info size={40} />
            </div>
            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Rosário Diário</h3>
-           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.0.4 Gold Edition</p>
+           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.0.7 Gold Edition</p>
            <div className="space-y-4 max-w-xs">
              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
                <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>

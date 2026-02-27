@@ -11,7 +11,7 @@ import Alarm from './components/Alarm';
 import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
 import { 
-  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart 
+  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon
 } from 'lucide-react';
 
 // Helper Components for Modals
@@ -71,7 +71,7 @@ import DiaryComponent from './components/Diary';
 import ProfileComponent from './components/Profile';
 import BibleComponent from './components/Bible';
 import { BibleVerse, getDailyVerse, getPsalmOfDay } from './services/bibleService';
-import { scheduleAlarm } from './services/notificationService';
+import { scheduleAlarms, scheduleNotifications } from './services/notificationService';
 
 export default function App() {
   const [isFirstTime, setIsFirstTime] = useState(() => !localStorage.getItem('rosario_user_data'));
@@ -81,15 +81,18 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userName, setUserName] = useState('Maria Silva');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState({
-    reminders: true,
-    audioAlerts: false,
-    dailyMystery: true,
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('rosario_notifications_config');
+    return saved ? JSON.parse(saved) : {
+      reminders: true,
+      audioAlerts: false,
+      dailyMystery: true,
+      prayerHaptics: true,
+    };
   });
   
-  // Real Alarm State
-  const [alarmTime, setAlarmTime] = useState({ hour: 6, minute: 30 });
-  const [alarmEnabled, setAlarmEnabled] = useState(true);
+  // Real Alarms State (Up to 3)
+  const [alarms, setAlarms] = useState([{ hour: 6, minute: 30, enabled: true }]);
   const [alarmSound, setAlarmSound] = useState('Gregoriano');
 
   // Stats State
@@ -107,6 +110,8 @@ export default function App() {
   const [isSupporter, setIsSupporter] = useState(() => {
     return localStorage.getItem('rosario_is_supporter') === 'true';
   });
+  const [isPhotoPromptOpen, setIsPhotoPromptOpen] = useState(false);
+  const [photoTarget, setPhotoTarget] = useState<'profile' | 'onboarding'>('profile');
   const [prayerTypography, setPrayerTypography] = useState(() => {
     const saved = localStorage.getItem('rosario_prayer_typography');
     return saved ? JSON.parse(saved) : {
@@ -126,10 +131,11 @@ export default function App() {
         // Android specific: color the bar to avoid gray
         if (window.navigator.userAgent.includes('Android')) {
           await StatusBar.setBackgroundColor({ color: isDarkMode ? '#020617' : '#f8fafc' });
+          await StatusBar.setOverlaysWebView({ overlay: false });
         }
 
         const status = await LocalNotifications.checkPermissions();
-        if (status.display === 'prompt') {
+        if (status.display === 'prompt' || status.display === 'prompt-with-rationale') {
           await LocalNotifications.requestPermissions();
         }
       } catch (e) {
@@ -143,10 +149,18 @@ export default function App() {
     localStorage.setItem('rosario_prayer_typography', JSON.stringify(prayerTypography));
   }, [prayerTypography]);
 
+  useEffect(() => {
+    localStorage.setItem('rosario_notifications_config', JSON.stringify(notifications));
+  }, [notifications]);
+
   // Handle Alarm Scheduling
   useEffect(() => {
-    scheduleAlarm(alarmTime.hour, alarmTime.minute, alarmEnabled);
-  }, [alarmTime, alarmEnabled]);
+    scheduleAlarms(alarms);
+  }, [alarms]);
+
+  useEffect(() => {
+    scheduleNotifications(notifications.reminders || notifications.dailyMystery);
+  }, [notifications]);
 
   useEffect(() => {
     localStorage.setItem('rosario_is_supporter', String(isSupporter));
@@ -163,7 +177,14 @@ export default function App() {
       const data = JSON.parse(savedData);
       setUserName(data.name);
       setUserPhoto(data.photo);
-      setAlarmTime(data.alarm);
+      
+      // Migrate old alarm to alarms array
+      if (data.alarms) {
+        setAlarms(data.alarms);
+      } else if (data.alarm) {
+        setAlarms([data.alarm]);
+      }
+      
       setTotalPrayers(data.totalPrayers || 0);
       setStreak(data.streak || 0);
       setDailyHistory(data.dailyHistory || []);
@@ -237,34 +258,38 @@ export default function App() {
   const handleOnboardingComplete = (data: { 
     name: string; 
     photo: string | null; 
-    alarm: { hour: number; minute: number; enabled: boolean };
+    alarms: { hour: number; minute: number; enabled: boolean }[];
+    notifications: boolean;
     theme: 'light' | 'dark';
   }) => {
     setUserName(data.name);
     setUserPhoto(data.photo);
-    setAlarmTime({ hour: data.alarm.hour, minute: data.alarm.minute });
-    setAlarmEnabled(data.alarm.enabled);
+    setAlarms(data.alarms);
+    setNotifications(prev => ({...prev, reminders: data.notifications, dailyMystery: data.notifications}));
     localStorage.setItem('rosario_user_data', JSON.stringify({
       name: data.name,
       photo: data.photo,
-      alarm: { hour: data.alarm.hour, minute: data.alarm.minute, enabled: data.alarm.enabled }
+      alarms: data.alarms
     }));
     setIsFirstTime(false);
   };
 
-  const handlePhotoUpload = async () => {
+  const handlePhotoUploadTrigger = async () => {
+    setIsPhotoPromptOpen(true);
+  };
+
+  const handleTakePhoto = async (sourceType: 'CAMERA' | 'PHOTOS') => {
     try {
+      const source = sourceType === 'CAMERA' ? CameraSource.Camera : CameraSource.Photos;
       const image = await Camera.getPhoto({
         quality: 90,
-        allowEditing: true,
+        allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt, // Allows user to choose between Camera or Photos
-        promptLabelHeader: 'Foto de Perfil',
-        promptLabelPhoto: 'Escolher da Galeria',
-        promptLabelPicture: 'Tirar Foto'
+        source: source
       });
 
       if (image && image.dataUrl) {
+        setPhotoTarget('profile');
         setUserPhoto(image.dataUrl);
         // Update localStorage
         const savedData = localStorage.getItem('rosario_user_data');
@@ -276,6 +301,8 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
+    } finally {
+      setIsPhotoPromptOpen(false);
     }
   };
 
@@ -285,7 +312,7 @@ export default function App() {
         isDarkMode={isDarkMode} 
         onToggleDarkMode={toggleDarkMode} 
         onComplete={handleOnboardingComplete} 
-        onPhotoUpload={handlePhotoUpload}
+        onPhotoUpload={handlePhotoUploadTrigger}
       />
     );
   }
@@ -310,9 +337,8 @@ export default function App() {
                 dailyArt={dailyArt} 
                 isDarkMode={isDarkMode} 
                 onToggleDarkMode={toggleDarkMode} 
-                alarmTime={alarmTime}
-                alarmEnabled={alarmEnabled}
-                setAlarmEnabled={setAlarmEnabled}
+                alarms={alarms}
+                setAlarms={setAlarms}
                 userName={userName}
                 userPhoto={userPhoto}
                 streak={streak}
@@ -327,17 +353,16 @@ export default function App() {
                 dailyArt={dailyArt} 
                 onComplete={handlePrayerComplete}
                 typography={prayerTypography}
+                hapticsEnabled={notifications.prayerHaptics ?? true}
               />
             )}
             {currentScreen === 'alarm' && (
               <Alarm 
                 onNavigate={setCurrentScreen} 
-                time={alarmTime} 
-                setTime={setAlarmTime}
+                alarms={alarms} 
+                setAlarms={setAlarms}
                 sound={alarmSound}
                 setSound={setAlarmSound}
-                enabled={alarmEnabled}
-                setEnabled={setAlarmEnabled}
               />
             )}
             {currentScreen === 'settings' && (
@@ -351,7 +376,7 @@ export default function App() {
                 setUserPhoto={setUserPhoto}
                 userNameSubtitle={userNameSubtitle}
                 setUserNameSubtitle={setUserNameSubtitle}
-                onPhotoUpload={handlePhotoUpload}
+                onPhotoUpload={handlePhotoUploadTrigger}
                 notifications={notifications}
                 setNotifications={setNotifications}
                 activeSub={settingsSub}
@@ -383,7 +408,7 @@ export default function App() {
                 }} 
                 userName={userName}
                 userPhoto={userPhoto}
-                onPhotoUpload={handlePhotoUpload}
+                onPhotoUpload={handlePhotoUploadTrigger}
                 totalPrayers={totalPrayers}
                 streak={streak}
                 dailyHistory={dailyHistory}
@@ -615,6 +640,58 @@ export default function App() {
                     className="w-full py-4 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
                   >
                     Agora não, obrigado
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Câmera / Galeria Modal */}
+        <AnimatePresence>
+          {isPhotoPromptOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-6"
+            >
+              <div 
+                className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+                onClick={() => setIsPhotoPromptOpen(false)}
+              ></div>
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl flex flex-col p-6 space-y-4"
+              >
+                <div className="flex flex-col items-center mb-2">
+                  <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mb-4"></div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Foto de Perfil</h3>
+                  <p className="text-xs text-slate-500 font-medium">Escolha de onde quer enviar a sua foto</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={() => handleTakePhoto('CAMERA')}
+                    className="w-full bg-primary text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-primary-dark transition-all active:scale-[0.98]"
+                  >
+                    <CameraIcon size={20} />
+                    Tirar Nova Foto
+                  </button>
+                  <button 
+                    onClick={() => handleTakePhoto('PHOTOS')}
+                    className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    Escolher da Galeria
+                  </button>
+                  <button 
+                    onClick={() => setIsPhotoPromptOpen(false)}
+                    className="w-full py-4 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest mt-2"
+                  >
+                    Cancelar e Fechar
                   </button>
                 </div>
               </motion.div>

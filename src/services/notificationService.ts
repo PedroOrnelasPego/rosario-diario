@@ -1,6 +1,27 @@
-import { LocalNotifications } from '@capacitor/local-notifications';
+import { LocalNotifications, ScheduleOptions, LocalNotificationSchema } from '@capacitor/local-notifications';
 
-export const scheduleAlarm = async (hour: number, minute: number, enabled: boolean) => {
+export const scheduleAlarms = async (alarms: { hour: number; minute: number; enabled: boolean }[]) => {
+  try {
+    const navApp = (window as any).NativeApp;
+    if (navApp) {
+      // Cancelar todos primeiro
+      for (let i = 0; i < 3; i++) {
+        navApp.cancelAlarm(i);
+      }
+      
+      alarms.forEach((alarm, i) => {
+        if (alarm.enabled && i < 3) {
+          navApp.setAlarm(i, alarm.hour, alarm.minute);
+          console.log(`Native Alarm scheduled for ${alarm.hour}:${alarm.minute} at index ${i}`);
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error scheduling alarms natively:", error);
+  }
+};
+
+export const scheduleNotifications = async (enabled: boolean) => {
   try {
     // First, clear all existing notifications
     const pending = await LocalNotifications.getPending();
@@ -17,29 +38,35 @@ export const scheduleAlarm = async (hour: number, minute: number, enabled: boole
       if (request.display !== 'granted') return;
     }
 
-    // Schedule the notification for every day at the specified time
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          title: "Hora da Oração",
-          body: "O seu rosário diário espera por você. Vamos rezar?",
-          id: 1,
-          schedule: {
-            on: {
-              hour: hour,
-              minute: minute
-            },
-            allowWhileIdle: true,
-            repeats: true
+    const messages = [
+      "O seu rosário diário espera por você. Vamos rezar?",
+      "Você já rezou hoje?",
+      "Um momento com Maria pode transformar o seu dia.",
+      "Salmo 23: O Senhor é meu pastor, nada me faltará."
+    ];
+
+    const notifications: LocalNotificationSchema[] = [];
+    
+    // Agendar algumas notificações diárias (ex: 9h, 15h, 20h)
+    [9, 15, 20].forEach((hour, i) => {
+      notifications.push({
+        title: "Momento de Oração",
+        body: messages[i % messages.length],
+        id: 10 + i,
+        schedule: {
+          on: {
+            hour: hour,
+            minute: 0
           },
-          sound: 'beep.wav', // Fallback
-          actionTypeId: "",
-          extra: null
+          allowWhileIdle: true,
+          repeats: true
         }
-      ]
+      });
     });
-    console.log(`Alarm scheduled for ${hour}:${minute}`);
+
+    await LocalNotifications.schedule({ notifications });
+    console.log(`Periodic notifications enabled`);
   } catch (error) {
-    console.error("Error scheduling alarm:", error);
+    console.error("Error scheduling periodic notifications:", error);
   }
 };

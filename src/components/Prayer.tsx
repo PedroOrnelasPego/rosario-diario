@@ -13,6 +13,7 @@ interface PrayerProps {
     fontSize: string;
     isBold: boolean;
   };
+  hapticsEnabled: boolean;
 }
 
 const INITIAL_PRAYERS = [
@@ -25,7 +26,7 @@ const INITIAL_PRAYERS = [
   { id: 'glory', name: 'Glória ao Pai', text: 'Glória ao Pai, ao Filho e ao Espírito Santo. Como era no princípio, agora e sempre. Amém.' },
 ];
 
-export default function Prayer({ onNavigate, dailyArt, onComplete, typography }: PrayerProps) {
+export default function Prayer({ onNavigate, dailyArt, onComplete, typography, hapticsEnabled }: PrayerProps) {
   const [step, setStep] = useState(0);
   const [showArrow, setShowArrow] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -91,12 +92,14 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, typography }:
 
   const handleNext = async () => {
     // Native Vibration
-    try {
-      await Haptics.impact({ style: ImpactStyle.Medium });
-    } catch (e) {
-      console.warn("Haptics not available");
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
+    if (hapticsEnabled) {
+      try {
+        await Haptics.impact({ style: ImpactStyle.Light });
+      } catch (e) {
+        console.warn("Haptics not available");
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(50);
+        }
       }
     }
     

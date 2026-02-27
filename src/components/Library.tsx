@@ -104,10 +104,10 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
         });
 
         await AdMob.showBanner({
-          adId: 'ca-app-pub-3940256099942544/6300978111', // Testing ID
+          adId: 'ca-app-pub-5471973562089914/3337330229', // Real AdMob Banner ID
           adSize: BannerAdSize.BANNER,
           position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 60 // Try to push it above navigation
+          margin: 86 // matches the absolute bottom placeholder above navigation
         });
       } catch (e) {
         console.error("AdMob error:", e);
@@ -235,18 +235,12 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
             </div>
           </div>
 
-          {/* AdMob Banner Placeholder - Reserving the bottom space */}
-          <div className="mt-8">
-            <div className="w-full h-24 bg-slate-200/50 dark:bg-slate-800/30 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2">
-              <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Publicidade AdMob</span>
-              <div className="flex gap-1.5">
-                <div className="size-1.5 rounded-full bg-slate-300 animate-pulse"></div>
-                <div className="size-1.5 rounded-full bg-slate-300 animate-pulse delay-75"></div>
-                <div className="size-1.5 rounded-full bg-slate-300 animate-pulse delay-150"></div>
-              </div>
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* FIXED AdMob Banner Placeholder - Reserving the exact space */}
+      <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 w-[320px] h-[50px] bg-slate-200/50 dark:bg-slate-800/30 rounded-lg border border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center gap-1 z-10 pointer-events-none">
+        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Publicidade AdMob</span>
       </div>
 
       {/* Reader Modal */}
