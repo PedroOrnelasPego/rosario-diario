@@ -17,6 +17,7 @@ interface SettingsProps {
     audioAlerts: boolean;
     dailyMystery: boolean;
     prayerHaptics?: boolean;
+    dailyProverbs?: boolean;
   };
   setNotifications: (notifs: any) => void;
   activeSub: SubScreen;
@@ -94,7 +95,7 @@ export default function AppSettings({
     {
       title: 'Aplicativo',
       items: [
-        { id: 'version', icon: Info, label: 'Versão', description: 'v1.1.11 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
+        { id: 'version', icon: Info, label: 'Versão', description: 'v1.4.0 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
       ]
     }
   ];
@@ -171,12 +172,12 @@ export default function AppSettings({
             <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4 ml-1 text-center">Área de Perigo</h3>
             <button 
               onClick={() => {
-                if (confirm('Tem certeza que deseja apagar sua conta? Esta ação é irreversível.')) {
-                  alert('Conta apagada com sucesso (Simulado).');
-                  onNavigate('home');
+                if (confirm('Tem certeza que deseja apagar sua conta? Esta ação é irreversível e todo seu progresso e conquistas serão perdidos para sempre.')) {
+                  localStorage.clear();
+                  window.location.reload();
                 }
               }}
-              className="w-full bg-red-50 text-red-500 font-bold py-4 rounded-3xl border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-all"
+              className="w-full bg-red-50 dark:bg-red-950/30 text-red-500 font-bold py-4 rounded-3xl border border-red-100 dark:border-red-900/50 flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all active:scale-95"
             >
               <Trash2 size={18} /> Apagar Minha Conta
             </button>
@@ -197,9 +198,9 @@ export default function AppSettings({
         </div>
         <div className="p-6 divide-y divide-slate-50 dark:divide-slate-800">
           {[
+            { id: 'dailyProverbs', label: 'Mensagens Diárias', desc: 'Receba versículos inspiradores ao longo do dia' },
             { id: 'reminders', label: 'Lembretes de Oração', desc: 'Alertas nos horários agendados' },
             { id: 'audioAlerts', label: 'Sinais Sonoros', desc: 'Reproduzir sons ao notificar' },
-            { id: 'dailyMystery', label: 'Mistério do Dia', desc: 'Destaque visual do mistério atual' },
           ].map(item => (
             <div key={item.id} className="flex items-center justify-between py-6">
               <div>
@@ -357,15 +358,14 @@ export default function AppSettings({
              <Info size={40} />
            </div>
            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Rosário Diário</h3>
-           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.1.11 Gold Edition</p>
+           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.4.0 Gold Edition</p>
            <div className="space-y-4 max-w-xs">
              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
                <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>
                <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 space-y-1 font-medium italic">
-                 <li>Novo Dashboard de Jornada Premium</li>
-                 <li>Edição de Perfil e Nome</li>
-                 <li>Biblioteca com artes clássicas</li>
-                 <li>Correções de Oração (Typo bugs fixed)</li>
+                 <li>Forma gratuita de apoiar o App (Ads)</li>
+                 <li>Nova Splash Screen Elegante</li>
+                 <li>Janelas adaptativas e sem cortes</li>
                </ul>
              </div>
              <p className="text-[10px] text-slate-400 font-bold">Desenvolvido com ❤️ para a sua fé.</p>
@@ -429,8 +429,13 @@ export default function AppSettings({
           ))}
 
           <button 
-            onClick={() => onNavigate('home')}
-            className="w-full flex items-center justify-center gap-3 p-5 text-red-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors mt-8"
+            onClick={() => {
+              if (confirm('Você será desconectado e o aplicativo voltará para a tela inicial. Continuar?')) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+            className="w-full flex items-center justify-center gap-3 p-5 text-red-500 font-bold bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors mt-8 active:scale-95"
           >
             <LogOut size={20} />
             Sair da Conta

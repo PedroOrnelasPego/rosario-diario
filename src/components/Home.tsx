@@ -36,6 +36,7 @@ export default function Home({
   onOpenPremium
 }: HomeProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const today = new Date();
   const dateString = today.toLocaleDateString('pt-BR', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -143,39 +144,46 @@ export default function Home({
             <Flame size={18} />
             <span className="text-[10px] font-black uppercase tracking-widest">Ofensiva</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">0 <span className="text-xs font-medium text-slate-500">Dias</span></p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{streak} <span className="text-xs font-medium text-slate-500">{streak === 1 ? 'Dia' : 'Dias'}</span></p>
         </div>
       </div>
 
       {/* Mystery Card - Only show if online */}
       {window.navigator.onLine && dailyArt && (
         <div className="px-6 py-4">
-          <div className="relative overflow-hidden rounded-3xl bg-slate-900 shadow-2xl h-72 border border-slate-800/50 group">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 shadow-2xl h-56 border border-slate-800/50 group">
+            {!imageLoaded && (
+               <div className="absolute inset-0 bg-slate-800 animate-pulse flex items-center justify-center">
+                  <div className="size-8 border-4 border-slate-600 border-t-primary rounded-full animate-spin"></div>
+               </div>
+            )}
             <img 
               src={dailyArt.url} 
               alt={dailyArt.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              onLoad={() => setImageLoaded(true)}
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Tizian_041.jpg/800px-Tizian_041.jpg';
+                setImageLoaded(true);
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent transition-opacity duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
             
-            <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col gap-1 z-10">
+            <div className={`absolute bottom-0 left-0 p-6 w-full flex flex-col gap-1 z-10 transition-opacity duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-1 rounded-lg bg-primary text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
                   Hoje
                 </span>
               </div>
-              <h3 className="text-2xl font-black text-white leading-tight">{currentMystery.name}</h3>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
-                <p className="text-slate-300 text-sm italic line-clamp-1 pr-4">Arte: {dailyArt.title}</p>
+              <h3 className="text-xl font-black text-white leading-tight">{currentMystery.name}</h3>
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/10">
+                <p className="text-slate-300 text-xs italic line-clamp-2 flex-1">Arte: {dailyArt.title}</p>
                 <button 
                   onClick={() => setShowDetails(true)}
-                  className="bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-xl text-xs font-bold border border-white/20 shrink-0 hover:bg-white/20 transition-all active:scale-95 flex items-center gap-2"
+                  className="bg-white/10 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold border border-white/20 shrink-0 hover:bg-white/20 transition-all active:scale-95 flex items-center gap-1.5"
                 >
                   <Info size={14} />
-                  Explorar
+                  Detalhes
                 </button>
               </div>
             </div>
@@ -187,8 +195,8 @@ export default function Home({
       {/* Details Modal */}
       {showDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800">
-            <div className="relative h-[450px]">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800">
+            <div className="relative h-64 shrink-0 bg-slate-100 dark:bg-slate-800">
               <img 
                 src={dailyArt?.url} 
                 alt="Arte" 
@@ -204,7 +212,7 @@ export default function Home({
                 <CloseIcon size={20} />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0">
               <span className="text-primary text-[10px] font-black uppercase tracking-widest mb-2 block">Curiosidades</span>
               <h4 className="text-xl font-black text-slate-900 dark:text-white mb-3">{currentMystery.name}</h4>
               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">

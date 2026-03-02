@@ -126,8 +126,7 @@ export default function Alarm({ onNavigate, alarms, setAlarms, sound, setSound }
         <button onClick={() => onNavigate('home')} className="text-slate-400 dark:text-slate-100 size-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="flex-1 text-center text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">Alarme de Oração</h2>
-        <button onClick={() => onNavigate('home')} className="text-primary font-black text-sm pr-2">Salvar</button>
+        <h2 className="flex-1 text-center text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest pl-10">Alarme de Oração</h2>
       </div>
 
       {/* Main Content */}

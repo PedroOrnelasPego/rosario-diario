@@ -3,17 +3,21 @@ import { Screen } from '../App';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Artwork, getMysteryArtList } from '../services/artService';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { AdMob, RewardInterstitialAdPluginEvents } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
 interface PrayerProps {
   onNavigate: (screen: Screen) => void;
   dailyArt: Artwork | null;
   onComplete: () => void;
+  onOpenPremium: () => void;
   typography: {
     fontFamily: string;
     fontSize: string;
     isBold: boolean;
   };
   hapticsEnabled: boolean;
+  supporterLevel: number;
 }
 
 const INITIAL_PRAYERS = [
@@ -26,10 +30,36 @@ const INITIAL_PRAYERS = [
   { id: 'glory', name: 'Glória ao Pai', text: 'Glória ao Pai, ao Filho e ao Espírito Santo. Como era no princípio, agora e sempre. Amém.' },
 ];
 
-export default function Prayer({ onNavigate, dailyArt, onComplete, typography, hapticsEnabled }: PrayerProps) {
-  const [step, setStep] = useState(0);
+export default function Prayer({ onNavigate, dailyArt, onComplete, onOpenPremium, typography, hapticsEnabled, supporterLevel }: PrayerProps) {
+  const [step, setStep] = useState(() => {
+    const saved = localStorage.getItem('rosario_prayer_step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [showArrow, setShowArrow] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [isAdFailed, setIsAdFailed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('rosario_prayer_step', step.toString());
+  }, [step]);
+
+  useEffect(() => {
+    const initAd = async () => {
+      if (supporterLevel > 0 || Capacitor.getPlatform() !== 'android') return;
+      try {
+        await AdMob.initialize({});
+        await AdMob.prepareRewardInterstitialAd({
+          adId: 'ca-app-pub-5471973562089914/4377350660',
+          isTesting: false
+        });
+      } catch (e) {
+        console.warn('Erro ao carregar anúncio', e);
+        setIsAdFailed(true);
+      }
+    };
+    initAd();
+  }, [supporterLevel]);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -106,9 +136,43 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, typography, h
     if (step < totalSteps - 1) {
       setStep(s => s + 1);
     } else {
-      onComplete();
-      onNavigate('home');
+      setShowCompletionModal(true);
     }
+  };
+
+  const finishPrayer = () => {
+    onComplete();
+    localStorage.removeItem('rosario_prayer_step'); // clear progress
+    onNavigate('home');
+  };
+
+  const handleWatchAd = async () => {
+    if (Capacitor.getPlatform() !== 'android' || isAdFailed) {
+      finishPrayer();
+      return;
+    }
+    
+    try {
+      const dismissListener = await AdMob.addListener(RewardInterstitialAdPluginEvents.Dismissed, () => {
+         dismissListener.remove();
+         finishPrayer();
+      });
+      
+      await AdMob.showRewardInterstitialAd();
+    } catch (e) {
+      console.warn('Erro ao exibir anúncio', e);
+      finishPrayer();
+    }
+  };
+
+  const handleGoPremium = () => {
+    localStorage.removeItem('rosario_prayer_step');
+    onNavigate('home');
+    setTimeout(() => onOpenPremium(), 200);
+  };
+  
+  const handleExitPrayer = () => {
+    onNavigate('home'); // step is already saved in localStorage for when they return!
   };
 
   return (
@@ -131,35 +195,57 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, typography, h
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md py-4 flex flex-col items-center gap-3 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
-          <div className="flex justify-center flex-wrap gap-1.5 px-6">
-            {[...Array(13)].map((_, i) => {
-              const subStep = (step - INITIAL_PRAYERS.length) % 13;
-              const isDecade = step >= INITIAL_PRAYERS.length && step < totalSteps - 1;
-              const isActive = isDecade && (i === subStep || (i === 12 && subStep >= 12));
-              const isCompleted = isDecade && i < subStep;
-              const isSpecial = i === 0 || i === 11 || i === 12;
-              
-              return (
-                <div 
-                  key={i} 
-                  className={`transition-all duration-500 rounded-full ${
-                    isSpecial ? 'size-3 border-2 border-primary/20 bg-primary/10' : 'size-1.5'
-                  } ${
-                    isActive ? 'bg-primary scale-125 shadow-lg shadow-primary/40' : 
-                    isCompleted ? 'bg-primary/40' : 'bg-slate-100 dark:bg-slate-800'
-                  }`}
-                ></div>
-              );
-            })}
+          <div className="flex justify-center flex-wrap gap-2 px-6 items-center">
+            {step < INITIAL_PRAYERS.length ? (
+               // Contas iniciais (Cruz + 6)
+               [...Array(INITIAL_PRAYERS.length)].map((_, i) => {
+                 const isActive = i === step;
+                 const isCompleted = i < step;
+                 return (
+                   <div key={`init-${i}`} className={`flex items-center justify-center transition-all duration-500 rounded-full ${
+                     i === 0 ? 'text-primary' : ''
+                   } ${
+                     i === 0 && isActive ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.6)] scale-125' : 
+                     i === 0 && isCompleted ? 'opacity-50' :
+                     isActive ? 'size-3.5 bg-primary scale-125 shadow-xl shadow-primary/50' : 
+                     isCompleted ? 'size-2.5 bg-primary/40' : 'size-2.5 bg-slate-200 dark:bg-slate-800'
+                   }`}>
+                      {i === 0 ? <svg className={`w-8 h-8 ${isActive || isCompleted ? 'text-primary' : 'text-slate-300 dark:text-slate-700'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M5 8h14"/></svg> : null}
+                   </div>
+                 );
+               })
+            ) : step < totalSteps - 1 ? (
+               // 13 contas da dezena
+               [...Array(13)].map((_, i) => {
+                 const subStep = (step - INITIAL_PRAYERS.length) % 13;
+                 const isActive = i === subStep || (i === 12 && subStep >= 12);
+                 const isCompleted = i < subStep;
+                 const isSpecial = i === 0 || i === 11 || i === 12; 
+                 return (
+                   <div 
+                     key={`dec-${i}`} 
+                     className={`transition-all duration-500 rounded-full ${
+                       isSpecial ? 'size-4 border-2 border-primary/20 bg-primary/10' : 'size-2.5'
+                     } ${
+                       isActive ? 'bg-primary scale-150 shadow-xl shadow-primary/50' : 
+                       isCompleted ? 'bg-primary/40' : 'bg-slate-200 dark:bg-slate-800'
+                     }`}
+                   ></div>
+                 );
+               })
+            ) : (
+               // Salve Rainha
+               <div className="size-4 rounded-full bg-primary scale-150 shadow-xl shadow-primary/50"></div>
+            )}
           </div>
-          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-            {step < INITIAL_PRAYERS.length ? 'Orações Iniciais' : `Dezena ${Math.floor((step - INITIAL_PRAYERS.length) / 13) + 1} de 5`}
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
+            {step < INITIAL_PRAYERS.length ? 'Orações Iniciais' : step >= totalSteps - 1 ? 'Agradecimento Final' : `Dezena ${Math.floor((step - INITIAL_PRAYERS.length) / 13) + 1} de 5`}
           </p>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center p-6 pb-[190px] overflow-hidden">
 
-          <div className="w-full h-full max-w-[380px] bg-white dark:bg-slate-900/60 rounded-[40px] px-6 py-4 border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center overflow-hidden relative">
+          <div className="w-full h-full max-w-[380px] md:max-w-2xl bg-white dark:bg-slate-900/60 rounded-[40px] px-6 md:px-12 py-4 border border-slate-100 dark:border-white/5 shadow-sm flex flex-col items-center overflow-hidden relative">
             <span className="text-primary text-[10px] font-black uppercase tracking-[0.4em] mt-4 mb-4 opacity-40 shrink-0">Meditando</span>
             <div 
               ref={scrollRef}
@@ -197,14 +283,57 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, typography, h
             <p className="text-slate-300 dark:text-slate-600 text-[8px] font-black uppercase tracking-widest">Caminho da Fé</p>
             <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold tracking-tight">Passo {step + 1} de {totalSteps}</p>
           </div>
-          <button 
-            onClick={() => setStep(s => Math.max(0, s - 1))}
-            className="px-4 py-2 text-primary/60 font-bold text-xs hover:bg-primary/5 rounded-xl transition-colors"
-          >
-            Voltar
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExitPrayer}
+              className="px-3 py-2 text-slate-400 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            >
+              Pausar
+            </button>
+            <button 
+              onClick={() => setStep(s => Math.max(0, s - 1))}
+              className="px-4 py-2 text-primary/60 font-bold text-xs hover:bg-primary/5 rounded-xl transition-colors"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       </div>
+
+      {showCompletionModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] w-full max-w-sm shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12">
+               <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M5 8h14"/></svg>
+            </div>
+            
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 relative z-10 text-center">Você completou!</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center relative z-10">Obrigado por rezar e manter sua fé viva.<br/>Como deseja continuar?</p>
+            
+            <div className="flex flex-col gap-3 w-full relative z-10">
+              {supporterLevel === 0 ? (
+                <>
+                  <button onClick={handleWatchAd} className="bg-primary shadow-xl shadow-primary/25 text-white py-4 rounded-3xl font-black text-sm hover:bg-primary-dark transition-all active:scale-[0.98] w-full">
+                    Assistir um anúncio <span className="block text-[8px] opacity-70 italic font-medium pt-1 uppercase tracking-widest">Ajuda a manter o app gratuito</span>
+                  </button>
+                  
+                  <button onClick={handleGoPremium} className="bg-accent-gold/10 text-accent-gold py-4 rounded-3xl font-black text-sm border-2 border-accent-gold/20 hover:bg-accent-gold/20 transition-all active:scale-[0.98] w-full mt-1">
+                    Quero ser Premium
+                  </button>
+                  
+                  <button onClick={finishPrayer} className="mt-2 text-slate-400 font-bold text-xs py-3 hover:text-slate-600 dark:hover:text-slate-300 transition-colors uppercase tracking-widest">
+                    Deixar para a próxima
+                  </button>
+                </>
+              ) : (
+                <button onClick={finishPrayer} className="bg-primary shadow-xl shadow-primary/25 text-white py-4 rounded-3xl font-black text-sm hover:bg-primary-dark transition-all active:scale-[0.98] w-full mt-2 uppercase tracking-widest">
+                  Você completou!
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

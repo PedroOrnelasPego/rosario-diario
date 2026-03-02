@@ -11,7 +11,7 @@ import Alarm from './components/Alarm';
 import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
 import { 
-  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon
+  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon, BookOpen
 } from 'lucide-react';
 import av1 from './assets/avatares/1.png';
 import av2 from './assets/avatares/2.png';
@@ -37,10 +37,10 @@ const PremiumFeatureItem = ({ icon: Icon, title, description }: any) => (
 );
 
 const AchievementBlock = ({ title, desc, progress, total, current, icon: Icon, earned }: any) => (
-  <div className={`p-5 rounded-3xl border-2 transition-all ${earned ? 'bg-primary/5 border-primary shadow-lg shadow-primary/5' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
-    <div className="flex items-center gap-4 mb-4">
-      <div className={`size-12 rounded-2xl flex items-center justify-center ${earned ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
-        <Icon size={24} />
+  <div className={`p-4 rounded-3xl border-2 transition-all ${earned ? 'bg-primary/5 border-primary shadow-lg shadow-primary/5' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
+    <div className="flex items-center gap-4 mb-3">
+      <div className={`size-10 rounded-2xl flex items-center justify-center ${earned ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
+        <Icon size={20} />
       </div>
       <div className="flex-1">
         <h4 className={`text-sm font-black ${earned ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{title}</h4>
@@ -71,7 +71,7 @@ const ArtworkPattern = () => (
   </div>
 );
 
-export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile';
+export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile' | 'history';
 
 import Navigation from './components/Navigation';
 import AppSettings from './components/Settings';
@@ -79,6 +79,7 @@ import LibraryComponent from './components/Library';
 import DiaryComponent from './components/Diary';
 import ProfileComponent from './components/Profile';
 import BibleComponent from './components/Bible';
+import HistoryComponent from './components/History';
 import { BibleVerse, getDailyVerse, getPsalmOfDay } from './services/bibleService';
 import { scheduleAlarms, scheduleNotifications } from './services/notificationService';
 
@@ -94,15 +95,34 @@ export default function App() {
     const saved = localStorage.getItem('rosario_notifications_config');
     return saved ? JSON.parse(saved) : {
       reminders: true,
-      audioAlerts: false,
-      dailyMystery: true,
+      audioAlerts: true,
       prayerHaptics: true,
+      dailyProverbs: true,
     };
   });
   
   // Real Alarms State (Up to 3)
-  const [alarms, setAlarms] = useState([{ hour: 6, minute: 30, enabled: true }]);
-  const [alarmSound, setAlarmSound] = useState('Gregoriano');
+  const [alarms, setAlarms] = useState(() => {
+    const savedData = localStorage.getItem('rosario_user_data');
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        if (data.alarms && data.alarms.length > 0) return data.alarms;
+        if (data.alarm) return [data.alarm];
+      } catch (e) {}
+    }
+    return [{ hour: 6, minute: 30, enabled: true }];
+  });
+  const [alarmSound, setAlarmSound] = useState(() => {
+    const savedData = localStorage.getItem('rosario_user_data');
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        if (data.alarmSound) return data.alarmSound;
+      } catch (e) {}
+    }
+    return 'Gregoriano';
+  });
 
   // Stats State
   const [totalPrayers, setTotalPrayers] = useState(0);
@@ -116,8 +136,12 @@ export default function App() {
   const [userNameSubtitle, setUserNameSubtitle] = useState(() => {
     return localStorage.getItem('rosario_user_subtitle') || 'Fiel de Maria';
   });
-  const [isSupporter, setIsSupporter] = useState(() => {
-    return localStorage.getItem('rosario_is_supporter') === 'true';
+  const [supporterLevel, setSupporterLevel] = useState(() => {
+    return parseInt(localStorage.getItem('rosario_supporter_level') || '0', 10);
+  });
+  const [purchasedDonations, setPurchasedDonations] = useState<string[]>(() => {
+    const saved = localStorage.getItem('rosario_purchased_donations');
+    return saved ? JSON.parse(saved) : [];
   });
   const [isPhotoPromptOpen, setIsPhotoPromptOpen] = useState(false);
   const [photoTarget, setPhotoTarget] = useState<'profile' | 'onboarding'>('profile');
@@ -168,7 +192,10 @@ export default function App() {
     if (savedData && !isFirstTime) {
       try {
         const data = JSON.parse(savedData);
-        data.alarms = alarms;
+        // Só salva se houver dados reais para não limpar a base
+        if (alarms.length > 0) {
+          data.alarms = alarms;
+        }
         data.alarmSound = alarmSound;
         localStorage.setItem('rosario_user_data', JSON.stringify(data));
       } catch (e) {}
@@ -176,12 +203,16 @@ export default function App() {
   }, [alarms, alarmSound, isFirstTime]);
 
   useEffect(() => {
-    scheduleNotifications(notifications.reminders || notifications.dailyMystery);
+    scheduleNotifications(notifications);
   }, [notifications]);
 
   useEffect(() => {
-    localStorage.setItem('rosario_is_supporter', String(isSupporter));
-  }, [isSupporter]);
+    localStorage.setItem('rosario_supporter_level', String(supporterLevel));
+  }, [supporterLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('rosario_purchased_donations', JSON.stringify(purchasedDonations));
+  }, [purchasedDonations]);
 
   useEffect(() => {
     localStorage.setItem('rosario_user_subtitle', userNameSubtitle);
@@ -196,14 +227,10 @@ export default function App() {
       setUserPhoto(data.photo);
       
       // Migrate old alarm to alarms array
-      if (data.alarms) {
-        setAlarms(data.alarms);
-      } else if (data.alarm) {
-        setAlarms([data.alarm]);
-      }
-      
-      if (data.alarmSound) {
-        setAlarmSound(data.alarmSound);
+      if (!data.alarms || data.alarms.length === 0) {
+        if (data.alarm) {
+          setAlarms([data.alarm]);
+        }
       }
       
       setTotalPrayers(data.totalPrayers || 0);
@@ -239,16 +266,32 @@ export default function App() {
   }, [isDarkMode]);
 
   const handlePrayerComplete = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const timeZoneOffset = now.getTimezoneOffset() * 60000;
+    const today = new Date(now.getTime() - timeZoneOffset).toISOString().split('T')[0];
+    
+    const yesterdayDate = new Date(now.getTime() - timeZoneOffset);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+    
     const newHistory = [...dailyHistory];
+    let newStreak = streak;
     
     if (!newHistory.includes(today)) {
       newHistory.push(today);
+      if (dailyHistory.includes(yesterday)) {
+        newStreak += 1;
+      } else {
+        newStreak = 1;
+      }
+    } else if (newStreak === 0 && newHistory.includes(today)) {
+      newStreak = 1;
     }
 
     const newTotal = totalPrayers + 1;
     setTotalPrayers(newTotal);
     setDailyHistory(newHistory);
+    setStreak(newStreak);
 
     // Update localStorage
     const savedData = localStorage.getItem('rosario_user_data');
@@ -256,9 +299,7 @@ export default function App() {
       const data = JSON.parse(savedData);
       data.totalPrayers = newTotal;
       data.dailyHistory = newHistory;
-      // Simple streak logic (could be more robust)
-      data.streak = (data.streak || 0) + 1;
-      setStreak(data.streak);
+      data.streak = newStreak;
       localStorage.setItem('rosario_user_data', JSON.stringify(data));
     }
   };
@@ -351,7 +392,7 @@ export default function App() {
   }
 
   return (
-    <div className={`mx-auto max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <div className={`mx-auto md:max-w-none max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <main className="flex-1 w-full overflow-y-auto relative flex flex-col custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
@@ -385,8 +426,10 @@ export default function App() {
                 onNavigate={setCurrentScreen} 
                 dailyArt={dailyArt} 
                 onComplete={handlePrayerComplete}
+                onOpenPremium={() => setIsPremiumModalOpen(true)}
                 typography={prayerTypography}
                 hapticsEnabled={notifications.prayerHaptics ?? true}
+                supporterLevel={supporterLevel}
               />
             )}
             {currentScreen === 'alarm' && (
@@ -423,6 +466,7 @@ export default function App() {
                 onNavigate={setCurrentScreen} 
                 psalmOfDay={psalmOfDay}
                 onOpenPremium={() => setIsPremiumModalOpen(true)}
+                supporterLevel={supporterLevel}
               />
             )}
             {currentScreen === 'bible' && (
@@ -446,10 +490,18 @@ export default function App() {
                 streak={streak}
                 dailyHistory={dailyHistory}
                 userNameSubtitle={userNameSubtitle}
-                isSupporter={isSupporter}
+                supporterLevel={supporterLevel}
                 onOpenPremium={() => setIsPremiumModalOpen(true)}
                 onOpenAchievements={() => setIsAchievementsModalOpen(true)}
                 onOpenDonation={() => setIsDonationModalOpen(true)}
+              />
+            )}
+            {currentScreen === 'history' && (
+              <HistoryComponent 
+                onNavigate={setCurrentScreen}
+                dailyHistory={dailyHistory}
+                totalPrayers={totalPrayers}
+                streak={streak}
               />
             )}
           </motion.div>
@@ -473,7 +525,7 @@ export default function App() {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[40px] shadow-2xl flex flex-col max-h-[92dvh]"
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl flex flex-col max-h-[92dvh]"
               >
                 {/* Sticky close button — always visible */}
                 <button 
@@ -486,7 +538,7 @@ export default function App() {
                 {/* Scrollable content */}
                 <div className="overflow-y-auto">
                   {/* Header */}
-                  <div className="h-44 bg-primary relative overflow-hidden rounded-t-[40px]">
+                  <div className="h-44 bg-primary relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20">
                       <ArtworkPattern />
                     </div>
@@ -500,40 +552,40 @@ export default function App() {
                   </div>
 
                   <div className="p-6 space-y-5 pb-10">
-                    <div className="space-y-3">
+                    {/* Small Donation Link at the top */}
+                    <button 
+                      onClick={() => {
+                        setIsPremiumModalOpen(false);
+                        setTimeout(() => setIsDonationModalOpen(true), 150);
+                      }}
+                      className="w-full text-center text-[11px] font-black text-slate-500 hover:text-rose-600 transition-colors flex items-center justify-center gap-1.5 -mt-2 mb-2 uppercase tracking-widest"
+                    >
+                      <Heart size={14} fill="currentColor" className="text-rose-500" />
+                      Fazer Doação
+                    </button>
+
+                    {/* Prominent Subscription Button with Price */}
+                    <button className="w-full bg-primary text-white font-black py-4 px-6 rounded-[28px] shadow-xl shadow-primary/25 hover:bg-primary-dark transition-all active:scale-[0.98] flex items-center justify-between">
+                      <div className="flex flex-col text-left">
+                        <span className="text-lg">Assinar Premium</span>
+                        <span className="text-[10px] text-white/70 italic"><Clock size={10} className="inline mr-1" />Teste grátis de 7 dias</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-white/70 mr-1">R$</span>
+                        <span className="text-2xl">11,90</span>
+                        <span className="text-[10px] text-white/70">/mês</span>
+                      </div>
+                    </button>
+
+                    {/* Features List below the CTA */}
+                    <div className="space-y-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2 text-center">O que você ganha:</p>
                       <PremiumFeatureItem icon={Activity} title="Dashboard Detalhado" description="Acompanhe sua evolução diária com gráficos." />
                       <PremiumFeatureItem icon={History} title="Histórico Completo" description="Veja todas as suas orações passadas." />
                       <PremiumFeatureItem icon={ShieldCheck} title="Sem Anúncios" description="Uma experiência focada 100% na sua fé." />
                       <PremiumFeatureItem icon={Download} title="Bíblia Offline" description="Acesse a Palavra sem precisar de internet." />
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
-                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Assinatura Mensal</p>
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">R$</span>
-                        <span className="text-4xl font-black text-slate-900 dark:text-white">11,90</span>
-                      </div>
-                      <p className="text-[10px] font-bold text-primary mt-2 flex items-center justify-center gap-1 italic">
-                        <Clock size={12} /> Teste por 7 dias grátis
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <button className="w-full bg-primary text-white font-black py-5 rounded-[28px] shadow-xl shadow-primary/25 hover:bg-primary-dark transition-all active:scale-[0.98]">
-                        Assinar Agora
-                      </button>
-                      
-                      <button 
-                        onClick={() => {
-                          setIsPremiumModalOpen(false);
-                          setTimeout(() => setIsDonationModalOpen(true), 150);
-                        }}
-                        className="w-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 font-bold py-4 rounded-[24px] flex items-center justify-center gap-2 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-sm"
-                      >
-                        <Heart size={18} fill="currentColor" className="opacity-80" />
-                        Fazer uma Doação Única
-                      </button>
-                    </div>
                     <p className="text-[9px] text-center text-slate-400 px-6">
                       Cancele a qualquer momento nas configurações da sua conta.
                     </p>
@@ -558,12 +610,12 @@ export default function App() {
                 onClick={() => setIsAchievementsModalOpen(false)}
               ></div>
               <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl overflow-hidden flex flex-col"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
               >
-                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-10">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-10 shrink-0">
                   <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">Suas Conquistas</h2>
                   <button 
                     onClick={() => setIsAchievementsModalOpen(false)}
@@ -573,13 +625,14 @@ export default function App() {
                   </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[70vh]">
+                <div className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[70vh]">
                   <AchievementBlock 
                     title="Iniciante na Fé" 
                     desc="Completou o primeiro terço" 
-                    progress={100} 
+                    progress={Math.min((totalPrayers/1)*100, 100)} 
                     total={1} 
-                    earned={true}
+                    current={Math.min(totalPrayers, 1)}
+                    earned={totalPrayers >= 1}
                     icon={Sparkles}
                   />
                   <AchievementBlock 
@@ -587,7 +640,8 @@ export default function App() {
                     desc="Rezar por 7 dias seguidos" 
                     progress={Math.min((streak/7)*100, 100)} 
                     total={7} 
-                    current={streak}
+                    current={Math.min(streak, 7)}
+                    earned={streak >= 7}
                     icon={Flame}
                   />
                   <AchievementBlock 
@@ -595,7 +649,8 @@ export default function App() {
                     desc="Completar 12 terços" 
                     progress={Math.min((totalPrayers/12)*100, 100)} 
                     total={12} 
-                    current={totalPrayers}
+                    current={Math.min(totalPrayers, 12)}
+                    earned={totalPrayers >= 12}
                     icon={Award}
                   />
                   <AchievementBlock 
@@ -603,7 +658,27 @@ export default function App() {
                     desc="Rezar antes das 08:00 por 3 dias" 
                     progress={0} 
                     total={3} 
+                    current={0}
+                    earned={false}
                     icon={Moon}
+                  />
+                  <AchievementBlock 
+                    title="Estudioso da Palavra" 
+                    desc="Ler 5 capítulos da Bíblia" 
+                    progress={0} 
+                    total={5} 
+                    current={0}
+                    earned={false}
+                    icon={BookOpen}
+                  />
+                  <AchievementBlock 
+                    title="Alma Generosa" 
+                    desc="Fazer pelo menos uma doação" 
+                    progress={supporterLevel > 0 ? 100 : 0} 
+                    total={1} 
+                    current={supporterLevel > 0 ? 1 : 0}
+                    earned={supporterLevel > 0}
+                    icon={Heart}
                   />
                 </div>
               </motion.div>
@@ -636,7 +711,7 @@ export default function App() {
                   </div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Apoie o Rosário Diário</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 font-medium px-4">
-                    Sua contribuição ajuda a manter o app no ar e gratuito para milhares de pessoas. Ao apoiar, você ganha o <span className="text-rose-500 font-black italic">Selo de Apoiador</span> no seu perfil!
+                    Sua contribuição ajuda a manter o app no ar e gratuito para milhares de pessoas. Ao apoiar, você ganha o <span className="text-rose-500 font-black italic">Coração Solidário</span> no seu perfil!
                   </p>
                 </div>
 
@@ -646,28 +721,44 @@ export default function App() {
                       { id: 'coffee', label: 'Um Cafézinho', price: '4,90', icon: '☕' },
                       { id: 'rosary', label: 'Um Terço', price: '14,90', icon: '📿' },
                       { id: 'church', label: 'Ajuda Generosa', price: '49,90', icon: '⛪' }
-                    ].map((level) => (
-                      <button 
-                        key={level.id}
-                        onClick={() => {
-                          // Simulating IAP success for now
-                          setIsSupporter(true);
-                          setIsDonationModalOpen(false);
-                        }}
-                        className="flex items-center justify-between p-5 rounded-3xl border-2 border-slate-100 dark:border-slate-800 hover:border-rose-500/30 hover:bg-rose-50/30 dark:hover:bg-rose-900/10 transition-all group active:scale-[0.98]"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="text-2xl">{level.icon}</span>
-                          <div className="text-left">
-                            <span className="text-sm font-black text-slate-900 dark:text-white block">{level.label}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Contribuição Única</span>
+                    ].map((levelItem) => {
+                      const isPurchased = purchasedDonations.includes(levelItem.id);
+                      return (
+                        <button 
+                          key={levelItem.id}
+                          disabled={isPurchased}
+                          onClick={() => {
+                            if (!isPurchased) {
+                              // Simulating IAP success
+                              setSupporterLevel(prev => Math.min(prev + 1, 3));
+                              setPurchasedDonations(prev => [...prev, levelItem.id]);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-5 rounded-3xl border-2 transition-all group ${
+                            isPurchased 
+                            ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 opacity-60 cursor-not-allowed' 
+                            : 'border-slate-100 dark:border-slate-800 hover:border-rose-500/30 hover:bg-rose-50/30 dark:hover:bg-rose-900/10 active:scale-[0.98]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <span className={`text-2xl ${isPurchased ? 'grayscale' : ''}`}>{levelItem.icon}</span>
+                            <div className="text-left">
+                              <span className="text-sm font-black text-slate-900 dark:text-white block">{levelItem.label}</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                {isPurchased ? 'Doação Realizada' : 'Fazer Doação'}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <span className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-2xl text-xs font-black text-slate-900 dark:text-white group-hover:bg-rose-500 group-hover:text-white transition-colors">
-                          R$ {level.price}
-                        </span>
-                      </button>
-                    ))}
+                          <span className={`px-4 py-2 rounded-2xl text-xs font-black transition-colors ${
+                            isPurchased 
+                            ? 'bg-transparent text-slate-400' 
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white group-hover:bg-rose-500 group-hover:text-white'
+                          }`}>
+                            {isPurchased ? <CheckCircle2 size={16} className="text-green-500" /> : `R$ ${levelItem.price}`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <p className="text-[10px] text-center text-slate-400 px-6 font-medium italic">

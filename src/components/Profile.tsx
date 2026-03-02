@@ -13,7 +13,7 @@ interface ProfileProps {
   streak: number;
   dailyHistory: string[];
   userNameSubtitle: string;
-  isSupporter: boolean;
+  supporterLevel: number;
   onOpenPremium: () => void;
   onOpenAchievements: () => void;
   onOpenDonation: () => void;
@@ -28,7 +28,7 @@ export default function ProfileComponent({
   streak,
   dailyHistory,
   userNameSubtitle,
-  isSupporter,
+  supporterLevel,
   onOpenPremium,
   onOpenAchievements,
   onOpenDonation
@@ -63,11 +63,13 @@ export default function ProfileComponent({
               <Camera size={14} />
             </button>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 focus:outline-none focus:ring-0">
             {userName}
-            {isSupporter && (
-              <span className="inline-flex items-center justify-center size-5 bg-rose-500 text-white rounded-full shadow-lg shadow-rose-200 dark:shadow-none" title="Apoiador">
-                <Heart size={10} fill="currentColor" />
+            {supporterLevel > 0 && (
+              <span className="flex items-center gap-0.5 ml-1" title={`${supporterLevel} Corações Solidários`}>
+                {[...Array(supporterLevel)].map((_, i) => (
+                  <Heart key={i} size={14} fill="currentColor" className="text-rose-500 drop-shadow-md" />
+                ))}
               </span>
             )}
           </h2>
@@ -92,12 +94,17 @@ export default function ProfileComponent({
 
           <button 
             onClick={onOpenDonation}
-            className="w-full mt-3 bg-rose-50 dark:bg-rose-900/20 py-3 rounded-xl border border-rose-100/50 dark:border-rose-900/40 flex items-center justify-center gap-2 active:scale-95 transition-all"
+            className={`w-full mt-3 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${
+              supporterLevel >= 3 
+              ? 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed opacity-80' 
+              : 'bg-rose-50 dark:bg-rose-900/20 border-rose-100/50 dark:border-rose-900/40 text-rose-500 active:scale-95'
+            }`}
           >
-             <Heart size={14} fill={isSupporter ? "currentColor" : "none"} className={isSupporter ? "text-rose-500" : "text-rose-400"} />
-             <span className={`text-[10px] font-black uppercase tracking-widest ${isSupporter ? 'text-rose-600 dark:text-rose-400' : 'text-rose-600 dark:text-rose-400'}`}>
-               {isSupporter ? 'Apoiador Oficial' : 'Fazer uma Doação'}
+             <Heart size={14} fill={supporterLevel > 0 ? "currentColor" : "none"} className={supporterLevel > 0 ? "text-rose-500" : "text-rose-400"} />
+             <span className={`text-[10px] font-black uppercase tracking-widest ${supporterLevel > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-rose-600 dark:text-rose-400'} ${supporterLevel >= 3 && 'text-slate-400 dark:text-slate-500 font-bold'}`}>
+               {supporterLevel >= 3 ? 'Agradecemos de coração' : supporterLevel > 0 ? 'Apoiar Novamente' : 'Fazer uma Doação'}
              </span>
+             <Heart size={14} fill={supporterLevel > 0 ? "currentColor" : "none"} className={supporterLevel > 0 ? "text-rose-500" : "text-rose-400"} />
           </button>
         </div>
 
@@ -149,18 +156,34 @@ export default function ProfileComponent({
           </div>
           
           <div className="bg-white dark:bg-slate-900 rounded-[32px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative group overflow-hidden">
-             <div className="absolute inset-0 bg-slate-50/40 dark:bg-black/20 backdrop-blur-[1px] z-10"></div>
+             {supporterLevel === 0 && <div className="absolute inset-0 bg-slate-50/40 dark:bg-black/20 backdrop-blur-[2px] z-10 cursor-pointer" onClick={onOpenPremium}></div>}
+            
             {/* Real Chart Area */}
             <div className="flex flex-col gap-4">
                <div className="flex justify-between items-end h-32 gap-2 px-2">
-                 {[35, 65, 45, 85, 55, 75, 50].map((h, i) => (
-                   <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                     <div className="w-full bg-primary/5 dark:bg-primary/10 rounded-t-xl relative overflow-hidden group/bar" style={{ height: `${h}%` }}>
-                       <div className="absolute inset-x-0 bottom-0 bg-primary/20 transition-all duration-500 group-hover/bar:bg-primary/40 h-full"></div>
-                     </div>
-                     <span className="text-[8px] font-black text-slate-300 uppercase">{['S','T','Q','Q','S','S','D'][i]}</span>
-                   </div>
-                 ))}
+                 {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (6 - dayOffset));
+                    const dateStr = d.toISOString().split('T')[0];
+                    const dayLabels = ['D','S','T','Q','Q','S','S'];
+                    const label = dayLabels[d.getDay()];
+                    
+                    // Logic: Use real data if premium, use purely visual fake mockup if not
+                    const isActive = supporterLevel > 0 
+                      ? dailyHistory.includes(dateStr)
+                      : (dayOffset === 3 || dayOffset === 5 || dayOffset === 6); // Mocked data point
+
+                    return (
+                      <div key={dayOffset} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                        <div 
+                          className={`w-full rounded-t-xl relative overflow-hidden group/bar transition-all duration-1000 ${isActive ? 'bg-primary/20 dark:bg-primary/30 h-full' : 'bg-slate-100 dark:bg-slate-800/50 h-[15%]'}`} 
+                        >
+                          <div className={`absolute inset-x-0 bottom-0 transition-all duration-500 h-full ${isActive ? 'bg-primary group-hover/bar:bg-primary-dark shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-transparent'}`}></div>
+                        </div>
+                        <span className={`text-[8px] font-black uppercase ${isActive ? 'text-primary drop-shadow-sm' : 'text-slate-300 dark:text-slate-600'}`}>{label}</span>
+                      </div>
+                    );
+                 })}
                </div>
             </div>
           </div>
@@ -169,7 +192,7 @@ export default function ProfileComponent({
         {/* Quick Links */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-50 dark:divide-slate-800 mb-6">
           <button 
-            onClick={onOpenPremium}
+            onClick={onOpenPremium} 
             className="flex items-center justify-between p-5 w-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors relative group"
           >
             <div className="flex items-center gap-4">

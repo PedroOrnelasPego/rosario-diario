@@ -1,13 +1,13 @@
-import { Book, Lock, ChevronRight, X, BookOpen } from 'lucide-react';
+import { Lock, ChevronRight, X, Download } from 'lucide-react';
 import { Screen } from '../App';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BibleVerse } from '../services/bibleService';
-import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
 
 interface LibraryProps {
   onNavigate: (screen: Screen) => void;
   psalmOfDay: BibleVerse | null;
   onOpenPremium: () => void;
+  supporterLevel: number;
 }
 
 const LADAINHA_TEXT = [
@@ -93,40 +93,88 @@ const ANGELUS_TEXT = [
   "Infundi, Senhor, a vossa graça em nossas almas, para que nós, que conhecemos pela anunciação do Anjo a encarnação de Jesus Cristo, vosso Filho, cheguemos, por sua paixão e cruz, à glória da ressurreição. Pelo mesmo Cristo, Senhor nosso. Amém."
 ];
 
-export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium }: LibraryProps) {
-  const [selectedText, setSelectedText] = useState<{ title: string; content: string[] } | null>(null);
+const SAO_BENTO_VERSIONS = [
+  {
+    label: "Português",
+    content: [
+      "A Cruz Sagrada seja a minha luz,",
+      "Não seja o dragão o meu guia.",
+      "Retira-te, satanás!",
+      "Nunca me aconselhes coisas vãs.",
+      "É mau o que tu me ofereces,",
+      "Bebe tu mesmo o teu veneno!",
+      "Amém."
+    ]
+  },
+  {
+    label: "Latim",
+    content: [
+      "Crux Sacra Sit Mihi Lux",
+      "Non Draco Sit Mihi Dux",
+      "Vade Retro Satana",
+      "Numquam Suade Mihi Vana",
+      "Sunt Mala Quae Libas",
+      "Ipse Venena Bibas",
+      "Amen."
+    ]
+  }
+];
 
-  useEffect(() => {
-    const showAd = async () => {
-      try {
-        await AdMob.initialize({
-          initializeForTesting: true,
-        });
+const VINDE_ESPIRITO_SANTO = [
+  "VINDE, ESPÍRITO SANTO",
+  "Vinde, Espírito Santo, enchei os corações dos vossos fiéis e acendei neles o fogo do vosso amor.",
+  "V. Enviai o vosso Espírito e tudo será criado.",
+  "R. E renovareis a face da terra.",
+  "OREMOS",
+  "Ó Deus, que instruístes os corações dos vossos fiéis com a luz do Espírito Santo, fazei que apreciemos retamente todas as coisas segundo o mesmo Espírito e gozemos sempre da sua consolação. Por Cristo, Senhor Nosso. Amém."
+];
 
-        await AdMob.showBanner({
-          adId: 'ca-app-pub-5471973562089914/3337330229', // Real AdMob Banner ID
-          adSize: BannerAdSize.BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 86 // matches the absolute bottom placeholder above navigation
-        });
-      } catch (e) {
-        console.error("AdMob error:", e);
-      }
-    };
+const PAI_NOSSO_TEXT = [
+  "PAI NOSSO",
+  "Pai Nosso que estais nos Céus, santificado seja o vosso Nome, venha a nós o vosso Reino, seja feita a vossa vontade assim na Terra como no Céu.",
+  "O pão nosso de cada dia nos dai hoje, perdoai-nos as nossas ofensas assim como nós perdoamos a quem nos tem ofendido, e não nos deixeis cair em tentação, mas livrai-nos do Mal.",
+  "Amém."
+];
 
-    showAd();
+const AVE_MARIA_TEXT = [
+  "AVE MARIA",
+  "Ave Maria, cheia de graça, o Senhor é convosco, bendita sois vós entre as mulheres e bendito é o fruto do vosso ventre, Jesus.",
+  "Santa Maria, Mãe de Deus, rogai por nós pecadores, agora e na hora da nossa morte.",
+  "Amém."
+];
 
-    return () => {
-      AdMob.hideBanner().catch(console.error);
-    };
-  }, []);
-
-  const categories = [
-    { title: 'Livros e Textos', id: 'texts', icon: Book, count: 0, color: 'bg-slate-200 dark:bg-slate-800', disabled: true },
-    { title: 'Bíblia Sagrada', id: 'bible', icon: BookOpen, count: 73, color: 'bg-primary' },
-  ];
+export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium, supporterLevel }: LibraryProps) {
+  const [selectedText, setSelectedText] = useState<{ title: string; content?: string[]; versions?: { label: string, content: string[] }[] } | null>(null);
+  const [activeVersion, setActiveVersion] = useState<number>(0);
 
   const resources = [
+    {
+      id: 7,
+      title: 'Vinde, Espírito Santo',
+      type: 'Invocação',
+      pages: 'Completo',
+      isPremium: false,
+      image: '/assets/images/espiritosanto.png',
+      content: VINDE_ESPIRITO_SANTO
+    },
+    {
+      id: 8,
+      title: 'Pai Nosso',
+      type: 'Oração',
+      pages: 'Jesus ensinou',
+      isPremium: false,
+      image: '/assets/images/painosso.png',
+      content: PAI_NOSSO_TEXT
+    },
+    {
+      id: 9,
+      title: 'Ave Maria',
+      type: 'Oração',
+      pages: 'Devoção Mariana',
+      isPremium: false,
+      image: '/assets/images/avemaria.png',
+      content: AVE_MARIA_TEXT
+    },
     {
       id: 4,
       title: 'Salmo do Dia',
@@ -153,20 +201,45 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
       isPremium: false,
       image: '/assets/images/angelus.png',
       content: ANGELUS_TEXT
+    },
+    {
+      id: 6,
+      title: 'Oração de São Bento',
+      type: 'Proteção',
+      pages: 'Latim/PT',
+      isPremium: false,
+      image: '/assets/images/saobento.png',
+      versions: SAO_BENTO_VERSIONS
+    }
+  ];
+
+  const bottomResources = [
+    {
+      id: 100,
+      title: 'Bíblia Sagrada',
+      type: 'Sagrado',
+      pages: '73 Livros',
+      isPremium: true,
+      image: '/assets/images/biblia.png',
+      action: 'bible'
+    },
+    {
+      id: 101,
+      title: 'Livros e Textos',
+      type: 'Estudo',
+      pages: 'Em breve',
+      isPremium: false,
+      image: '/assets/images/livros.png',
+      action: 'texts',
+      disabled: true
     }
   ];
 
   const handleResourceClick = (res: any) => {
-    if (res.content) {
-      setSelectedText({ title: res.title, content: res.content });
-    }
+    setActiveVersion(0);
+    setSelectedText({ title: res.title, content: res.content, versions: res.versions });
   };
 
-  const handleCategoryClick = (id: string) => {
-    if (id === 'bible') {
-      onNavigate('bible');
-    }
-  };
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -186,24 +259,60 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
         </div>
 
         <div className="px-6 space-y-8">
-          {/* Categories */}
-          <div className="grid grid-cols-2 gap-4">
-            {categories.map(cat => (
-              <button 
-                key={cat.title} 
-                onClick={() => !cat.disabled && handleCategoryClick(cat.id)}
-                disabled={cat.disabled}
-                className={`flex flex-col items-start p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all text-left group ${cat.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
-              >
-                <div className={`size-10 rounded-2xl ${cat.color} flex items-center justify-center ${cat.disabled ? 'text-slate-400' : 'text-white'} mb-3 shadow-lg shadow-black/5`}>
-                  <cat.icon size={20} />
+          {/* Bottom Catalog Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Cânones da Igreja</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {bottomResources.map(res => (
+                <div 
+                  key={res.id} 
+                  onClick={() => {
+                    if (res.disabled) return;
+                    if (res.action === 'bible') onNavigate('bible');
+                  }}
+                  className={`bg-white dark:bg-slate-900 rounded-3xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4 group transition-colors ${res.disabled ? 'opacity-60 grayscale cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                >
+                  <div className="size-16 rounded-2xl overflow-hidden shrink-0 bg-slate-100 relative shadow-inner">
+                    <img src={res.image} alt={res.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                       <span className="text-[9px] font-black text-primary uppercase tracking-widest">{res.type}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{res.title}</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">{res.pages}</p>
+                  </div>
+                  
+                  {res.action === 'bible' && supporterLevel > 0 && (
+                    <button 
+                      className="mr-2 p-2.5 bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-white transition-colors active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert('Bíblia Premium pronta para modo offline no seu celular!');
+                      }}
+                    >
+                      <Download size={16} />
+                    </button>
+                  )}
+                  {res.action === 'bible' && supporterLevel === 0 && (
+                    <button 
+                      className="mr-2 p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPremium();
+                      }}
+                    >
+                      <Lock size={16} />
+                    </button>
+                  )}
+                  
+                  {!res.disabled && <ChevronRight size={16} className={`text-slate-300 mr-2 group-hover:text-primary transition-colors`} />}
                 </div>
-                <span className="text-xs font-black text-slate-900 dark:text-white leading-tight">{cat.title}</span>
-                <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                  {cat.disabled ? 'Em breve!' : `${cat.count} Livros`}
-                </span>
-              </button>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Featured Section */}
@@ -234,13 +343,7 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
               ))}
             </div>
           </div>
-
         </div>
-      </div>
-
-      {/* FIXED AdMob Banner Placeholder - Reserving the exact space */}
-      <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 w-[320px] h-[50px] bg-slate-200/50 dark:bg-slate-800/30 rounded-lg border border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center gap-1 z-10 pointer-events-none">
-        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Publicidade AdMob</span>
       </div>
 
       {/* Reader Modal */}
@@ -257,9 +360,24 @@ export default function LibraryComponent({ onNavigate, psalmOfDay, onOpenPremium
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-8 font-serif leading-loose text-lg text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950">
-            <div className="max-w-prose mx-auto space-y-6 pb-20">
-              {selectedText.content.map((line, i) => {
+          <div className="flex-1 overflow-y-auto p-8 font-serif leading-loose text-lg text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 flex flex-col items-center">
+            
+            {selectedText.versions && (
+              <div className="flex w-full max-w-sm bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-6 shadow-sm shrink-0">
+                {selectedText.versions.map((ver, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveVersion(idx)}
+                    className={`flex-1 py-1.5 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${activeVersion === idx ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                  >
+                    {ver.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="max-w-prose w-full mx-auto space-y-6 pb-20">
+              {(selectedText.versions ? selectedText.versions[activeVersion].content : selectedText.content || []).map((line, i) => {
                 const trimmed = line.trim();
                 if (!trimmed) return null;
                 const isHeading = trimmed === trimmed.toUpperCase() && trimmed.length > 3;

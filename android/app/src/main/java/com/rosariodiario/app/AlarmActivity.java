@@ -51,13 +51,18 @@ public class AlarmActivity extends Activity {
 
     private void startAlarmSound() {
         String soundUriStr = getIntent().getStringExtra("soundUri");
-        Uri alarmUri = soundUriStr != null && !soundUriStr.isEmpty() ? Uri.parse(soundUriStr) : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmUri == null) {
-            alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        Uri alarmUri = null;
+        if (soundUriStr != null && !soundUriStr.isEmpty() && soundUriStr.startsWith("content://")) {
+            alarmUri = Uri.parse(soundUriStr);
+        } else {
+            alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmUri == null) {
+                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
         }
 
-        mediaPlayer = new MediaPlayer();
         try {
+            mediaPlayer = new MediaPlayer();
             mediaPlayer.setDataSource(this, alarmUri);
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
@@ -66,8 +71,21 @@ public class AlarmActivity extends Activity {
             mediaPlayer.setLooping(true);
             mediaPlayer.prepare();
             mediaPlayer.start();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            try {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setDataSource(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+                mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build());
+                mediaPlayer.setLooping(true);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
     }
 

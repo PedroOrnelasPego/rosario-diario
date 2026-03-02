@@ -25,4 +25,8 @@ Sempre que o usuário digitar `fechar versão` ou `feche a versão`, o sistema d
 2. Crie um novo cabeçalho para esta versão. Ex: `## [1.2.0] - 2026-X-Y`.
 3. Escreva em formato de tópicos objetivos e persuasivos quais foram as novidades (bugs resolvidos, visuais ajustados, features novas). Lembre-se que o usuário copia e cola essa pequena lista lá na tela de "Notas de Versão" do Google Play Console!
 
+## 5. Abrir o Android Studio
+1. Após fechar a versão, abra o projeto Android no Android Studio para que o usuário possa gerar a build final assinada.
+2. Execute o comando para abrir a pasta `android` no Android Studio. (ex: `powershell -c "Start-Process 'C:\Program Files\Android\Android Studio\bin\studio64.exe' 'c:\workspace\rosario-diario\android'"`)
+
 Feito tudo isso, avise-o! Crie um commit se for solicitado, e lembre ao desenvolvedor que os pacotes locais agora estão atualizados.
