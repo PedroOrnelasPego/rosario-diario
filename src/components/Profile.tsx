@@ -1,5 +1,5 @@
 import { 
-  Settings, Camera, Award, Flame, Calendar, MapPin, CheckCircle2, ChevronRight, Lock, Heart 
+  Settings, Camera, Award, Flame, Calendar, MapPin, CheckCircle2, ChevronRight, Lock, Heart, Church 
 } from 'lucide-react';
 import { Screen } from '../App';
 import avPadrao from '../assets/avatares/padrao.png';
@@ -10,6 +10,7 @@ interface ProfileProps {
   userPhoto: string | null;
   onPhotoUpload: () => void;
   totalPrayers: number;
+  totalNovenas: number;
   streak: number;
   dailyHistory: string[];
   userNameSubtitle: string;
@@ -25,6 +26,7 @@ export default function ProfileComponent({
   userPhoto, 
   onPhotoUpload,
   totalPrayers,
+  totalNovenas,
   streak,
   dailyHistory,
   userNameSubtitle,
@@ -37,6 +39,7 @@ export default function ProfileComponent({
     { label: 'Ofensiva', value: String(streak), icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
     { label: 'Terços', value: String(totalPrayers), icon: Award, color: 'text-primary', bg: 'bg-primary/10' },
     { label: 'Dias Ativo', value: String(dailyHistory.length), icon: Calendar, color: 'text-green-500', bg: 'bg-green-50' },
+    { label: 'Novenas', value: String(totalNovenas || 0), icon: Church, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 
   const defaultAvatar = avPadrao;
@@ -109,14 +112,14 @@ export default function ProfileComponent({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-4 gap-2 mb-8">
           {stats.map(s => (
             <div key={s.label} className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center text-center">
               <div className={`size-10 rounded-2xl ${s.bg} ${s.color} flex items-center justify-center mb-2`}>
                 <s.icon size={20} />
               </div>
-              <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{s.value}</span>
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-1">{s.label}</span>
+              <span className="text-sm font-black text-slate-900 dark:text-white leading-none">{s.value}</span>
+              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1 text-center leading-tight">{s.label}</span>
             </div>
           ))}
         </div>

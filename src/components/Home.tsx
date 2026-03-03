@@ -1,16 +1,16 @@
-import { Settings, AlarmClock, Flame, PlayCircle, Check, Moon, Sun, Info, X as CloseIcon, Church, BookOpen, ChevronRight, Lock } from 'lucide-react';
+import { Settings, Award, Flame, Check, Moon, Sun, Info, X as CloseIcon, Church, BookOpen, ChevronRight, ChevronDown, Lock, PlayCircle, Heart } from 'lucide-react';
 import { Screen } from '../App';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Artwork } from '../services/artService';
 import avPadrao from '../assets/avatares/padrao.png';
+import { AdMob, RewardInterstitialAdPluginEvents } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
 interface HomeProps {
   onNavigate: (screen: Screen) => void;
   dailyArt: Artwork | null;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  alarms: { hour: number; minute: number; enabled: boolean }[];
-  setAlarms: (alarms: { hour: number; minute: number; enabled: boolean }[]) => void;
   userName: string;
   userPhoto: string | null;
   streak: number;
@@ -18,6 +18,7 @@ interface HomeProps {
   dailyHistory: string[];
   dailyVerse: { text: string; reference: string } | null;
   onOpenPremium: () => void;
+  onNovenaComplete?: () => void;
 }
 
 export default function Home({ 
@@ -25,20 +26,150 @@ export default function Home({
   dailyArt, 
   isDarkMode, 
   onToggleDarkMode, 
-  alarms, 
-  setAlarms, 
   userName, 
   userPhoto,
   streak,
   totalPrayers,
   dailyHistory,
   dailyVerse,
-  onOpenPremium
+  onOpenPremium,
+  onNovenaComplete
 }: HomeProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [novena, setNovena] = useState<any>(null);
+  const [showNovenaModal, setShowNovenaModal] = useState(false);
+  const [novenaDay, setNovenaDay] = useState(0);
+  const [novenaProgress, setNovenaProgress] = useState<number[]>([]);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showArrow, setShowArrow] = useState(true);
+
+  useEffect(() => {
+    fetch('https://api-novena.vercel.app/api/novenas')
+      .then(r => r.json())
+      .then(data => {
+        const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date()).toLowerCase();
+        const novenasThisMonth = data[monthName];
+        if (novenasThisMonth && novenasThisMonth.length > 0) {
+          const fetchedNovena = novenasThisMonth[0];
+          setNovena(fetchedNovena);
+          const savedProgress = localStorage.getItem(`novena_progress_${fetchedNovena.title}`);
+          if (savedProgress) {
+            try {
+               setNovenaProgress(JSON.parse(savedProgress));
+            } catch(e) {}
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const [isAdFailed, setIsAdFailed] = useState(false);
+
+  useEffect(() => {
+    const initAd = async () => {
+      if (parseInt(localStorage.getItem('rosario_supporter_level') || '0', 10) > 0 || Capacitor.getPlatform() !== 'android') return;
+      try {
+        await AdMob.initialize({});
+        await AdMob.prepareRewardInterstitialAd({
+          adId: 'ca-app-pub-5471973562089914/4377350660',
+          isTesting: false
+        });
+      } catch (e) {
+        console.warn('Erro ao carregar anúncio', e);
+        setIsAdFailed(true);
+      }
+    };
+    initAd();
+  }, []);
+
+  const toggleNovenaDay = (dayIndex: number) => {
+    let newProgress = [...novenaProgress];
+    const isCompleting = !newProgress.includes(dayIndex);
+    const maxDays = novena?.content?.length || 9;
+    const wasCompleted = novenaProgress.length === maxDays;
+
+    if (isCompleting) {
+      newProgress.push(dayIndex);
+    } else {
+      newProgress = newProgress.filter(d => d !== dayIndex);
+    }
+    setNovenaProgress(newProgress);
+    if(novena) {
+      localStorage.setItem(`novena_progress_${novena.title}`, JSON.stringify(newProgress));
+    }
+    
+    const isNowCompleted = newProgress.length === maxDays;
+
+    // Mostra o popup se marcou como concluído e atualiza as estatísticas
+    if (isCompleting) {
+      if (!wasCompleted && isNowCompleted && onNovenaComplete) {
+        onNovenaComplete();
+      }
+      setShowCompletionModal(true);
+    }
+  };
+
+  const handleWatchAd = async () => {
+    if (Capacitor.getPlatform() !== 'android' || isAdFailed) {
+      setShowCompletionModal(false);
+      return;
+    }
+    try {
+      const dismissListener = await AdMob.addListener(RewardInterstitialAdPluginEvents.Dismissed, () => {
+         dismissListener.remove();
+         setShowCompletionModal(false);
+      });
+      await AdMob.showRewardInterstitialAd();
+    } catch (e) {
+      console.warn('Erro ao exibir anúncio', e);
+      setShowCompletionModal(false);
+    }
+  };
+
+  const handleNextDay = () => {
+    setShowCompletionModal(false);
+    if (novena?.content && novenaDay < novena.content.length - 1) {
+      setNovenaDay(novenaDay + 1);
+    }
+  };
   
   const today = new Date();
+  
+  let novenaStatus = '';
+  let showNovenaBanner = false;
+  let showProgressBar = false;
+
+  if (novena) {
+    try {
+      const startDayMatch = novena.starts.match(/\d+/);
+      const feastDayMatch = novena.feast.match(/\d+/);
+      const todayDate = today.getDate();
+      
+      if (startDayMatch && feastDayMatch) {
+         const startD = parseInt(startDayMatch[0]);
+         const feastD = parseInt(feastDayMatch[0]);
+         
+         const hasStarted = novenaProgress.length > 0;
+         showNovenaBanner = true;
+         
+         if (todayDate < startD) {
+           const diff = startD - todayDate;
+           novenaStatus = `Falta${diff > 1 ? 'm' : ''} ${diff} dia${diff > 1 ? 's' : ''}`;
+           if (hasStarted) showProgressBar = true;
+         } else if (todayDate <= feastD) {
+           novenaStatus = `${novenaProgress.length}/${novena?.content?.length || 9} Dias Concluídos`;
+           showProgressBar = true;
+         } else {
+           novenaStatus = 'Finalizada';
+           showProgressBar = true;
+         }
+      } else {
+         showNovenaBanner = true;
+      }
+    } catch(e) {}
+  }
+
   const dateString = today.toLocaleDateString('pt-BR', { weekday: 'long', month: 'short', day: 'numeric' });
   
   const hour = today.getHours();
@@ -112,32 +243,14 @@ export default function Home({
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 px-6 py-2">
-        <div 
-          onClick={() => onNavigate('alarm')}
-          className="flex flex-col gap-1 rounded-2xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 cursor-pointer shadow-sm hover:border-primary/30 transition-all"
-        >
+        <div className="flex flex-col gap-1 rounded-2xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
           <div className="flex items-center gap-2 text-primary">
-            <AlarmClock size={18} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Alarme</span>
+            <Award size={18} />
+            <span className="text-[10px] font-black uppercase tracking-widest">Terços</span>
           </div>
-          <div className="flex items-center justify-between w-full">
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {alarms[0] ? `${String(alarms[0].hour).padStart(2, '0')}:${String(alarms[0].minute).padStart(2, '0')}` : '00:00'}
-            </p>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                if (alarms.length > 0) {
-                  const newAlarms = [...alarms];
-                  newAlarms[0].enabled = !newAlarms[0].enabled;
-                  setAlarms(newAlarms);
-                }
-              }}
-              className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter transition-all ${alarms[0]?.enabled ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
-            >
-              {alarms[0]?.enabled ? 'ON' : 'OFF'}
-            </button>
-          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">
+            {totalPrayers} <span className="text-xs font-medium text-slate-500">Reza{totalPrayers === 1 ? 'da' : 'das'}</span>
+          </p>
         </div>
         <div className="flex flex-col gap-1 rounded-2xl bg-white dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
           <div className="flex items-center gap-2 text-accent-gold">
@@ -232,6 +345,176 @@ export default function Home({
               >
                 Entendi
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Novena Banner */}
+      {novena && showNovenaBanner && (
+        <div className="px-6 py-2">
+          <div 
+             onClick={() => {
+               // Encontra o próximo dia não completado
+               const maxDays = novena.content?.length || 9;
+               let nextDay = 0;
+               for (let i = 0; i < maxDays; i++) {
+                 if (!novenaProgress.includes(i)) {
+                   nextDay = i;
+                   break;
+                 }
+               }
+               // Se tudo completou (ex: dia 9 pronto e abriu dnv), pode abrir no ultimo
+               if (novenaProgress.length === maxDays) {
+                 nextDay = maxDays - 1;
+               }
+               setNovenaDay(nextDay);
+               setShowNovenaModal(true);
+             }}
+             className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-4 shadow-sm cursor-pointer hover:border-primary/30 active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center justify-between relative z-10 w-full">
+              <div className="flex flex-col flex-1 pb-1">
+                <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest mb-1.5 flex items-center gap-1.5"><Church size={12} className="text-primary" /> {showProgressBar ? 'Novena Atual' : (novenaStatus || 'Novena Atual')}</span>
+                <h4 className="text-slate-900 dark:text-white font-bold text-base leading-tight pr-4 mb-1">{novena.title}</h4>
+                {showProgressBar ? (
+                  <div className="w-full mt-2 pr-6">
+                     <div className="flex items-center justify-between gap-4 mb-1.5">
+                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{novenaStatus}</span>
+                       <span className="text-[10px] font-black text-primary">{Math.round((novenaProgress.length / (novena?.content?.length || 9)) * 100)}%</span>
+                     </div>
+                     <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                       <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${(novenaProgress.length / (novena?.content?.length || 9)) * 100}%` }}></div>
+                     </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">{novena.starts} — {novena.feast}</p>
+                )}
+              </div>
+              <div className="size-10 rounded-full bg-primary/5 flex items-center justify-center shrink-0 ml-4">
+                 <ChevronRight className="text-primary size-5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Novena Modal */}
+      {showNovenaModal && novena && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950 animate-in slide-in-from-bottom duration-300">
+          <div className="p-6 pb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0 z-10">
+            <div className="flex-1 min-w-0 pr-4">
+               <span className="text-primary text-[10px] font-black uppercase tracking-widest block mb-1">Novena Diária</span>
+               <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight truncate">{novena.title}</h3>
+            </div>
+            <button 
+              onClick={() => setShowNovenaModal(false)}
+              className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
+            >
+              <CloseIcon size={20} />
+            </button>
+          </div>
+          
+          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950">
+            <div className="flex overflow-x-auto custom-scrollbar p-4 gap-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shrink-0 snap-x">
+              {novena.content?.map((d: any, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setNovenaDay(idx)}
+                  className={`px-4 py-2 shrink-0 text-xs font-black uppercase tracking-widest rounded-xl transition-all snap-center flex items-center gap-1.5 ${novenaDay === idx ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 hover:border-primary/50'}`}
+                >
+                  {d.day}
+                  {novenaProgress.includes(idx) && <Check size={14} strokeWidth={3} className={novenaDay === idx ? "text-white" : "text-primary"} />}
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex-1 relative min-h-0 flex flex-col">
+              <div 
+                 className="absolute inset-0 overflow-y-auto p-6 md:p-8 font-serif leading-loose text-lg text-slate-800 dark:text-slate-200 custom-scrollbar"
+                 onScroll={(e) => {
+                    const target = e.target as HTMLDivElement;
+                    if (target.scrollHeight - target.scrollTop <= target.clientHeight + 50) {
+                       setShowArrow(false);
+                    } else {
+                       setShowArrow(true);
+                    }
+                 }}
+              >
+                <div className="max-w-prose mx-auto space-y-6 pb-20">
+                  {novena.content?.[novenaDay]?.prayers?.map((line: string, i: number) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+                    const isHeading = trimmed === trimmed.toUpperCase() && trimmed.length > 5;
+                    const isDialogue = trimmed.startsWith('V.') || trimmed.startsWith('R.');
+                    
+                    return (
+                     <p key={i} className={`
+                        ${isHeading ? 'text-xl font-black text-primary not-italic font-display mt-8 mb-4 border-b-2 border-primary/10 pb-2 text-center' : ''}
+                        ${isDialogue ? 'pl-4 border-l-2 border-slate-200 dark:border-slate-800 italic' : ''}
+                        ${!isHeading && !isDialogue && i === 1 ? 'first-letter:text-5xl first-letter:font-black first-letter:float-left first-letter:mr-3 first-letter:text-primary' : ''}
+                     `}>
+                       {trimmed}
+                     </p>
+                    )
+                  })}
+                </div>
+              </div>
+              
+              {showArrow && (
+                <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-8 pt-20 pointer-events-none z-10 opacity-50 bg-gradient-to-t from-white dark:from-slate-950 to-transparent transition-opacity">
+                   <div className="animate-bounce">
+                      <ChevronDown size={32} className="text-primary" />
+                   </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+               <button 
+                 onClick={() => toggleNovenaDay(novenaDay)}
+                 className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold transition-all active:scale-95 ${novenaProgress.includes(novenaDay) ? 'bg-primary/10 text-primary border-2 border-primary/20' : 'bg-primary text-white shadow-lg shadow-primary/20'}`}
+               >
+                 <Check size={20} className={novenaProgress.includes(novenaDay) ? 'opacity-100' : 'opacity-50'} />
+                 {novenaProgress.includes(novenaDay) ? 'Novena Concluída' : 'Marcar como Rezada'}
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Novena Completion Modal */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] w-full max-w-sm shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-[10%] right-[10%] opacity-5 dark:opacity-10 translate-x-1/2 -translate-y-1/4 pointer-events-none">
+               <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rotate-12 transform text-slate-900 dark:text-white"><path d="M12 2v20M5 8h14"/></svg>
+            </div>
+            
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 relative z-10 text-center">Dia Concluído!</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center relative z-10">Obrigado por perseverar na novena.<br/>Como deseja continuar?</p>
+            
+            <div className="flex flex-col gap-3 w-full relative z-10 pt-2">
+               {novena?.content && novenaDay < novena.content.length - 1 && (
+                 <button onClick={handleNextDay} className="bg-primary text-white shadow-xl shadow-primary/25 py-4 rounded-[20px] font-black text-sm hover:bg-primary-dark transition-all active:scale-[0.98] w-full text-center">
+                   Ir para o próximo dia
+                 </button>
+               )}
+
+               {parseInt(localStorage.getItem('rosario_supporter_level') || '0', 10) === 0 && (
+                 <button onClick={handleWatchAd} className="bg-slate-100 dark:bg-slate-800 text-slate-500 py-4 rounded-[20px] font-bold text-sm text-center active:scale-[0.98] hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors w-full group">
+                  <div className="flex items-center">
+                    <span className="flex items-center justify-center mx-auto gap-2">
+                      Apoiar projeto (Anúncio) 
+                    <Heart size={14} fill="currentColor" />
+                    </span>
+                  </div>
+                 </button>
+               )}
+               
+               <button onClick={() => { setShowCompletionModal(false); setShowNovenaModal(false); }} className="mt-2 text-slate-400 dark:text-slate-500 font-bold text-xs py-3 rounded-[20px] hover:text-slate-600 dark:hover:text-slate-300 transition-colors uppercase tracking-widest text-center w-full">
+                 Voltar para o Menu
+               </button>
             </div>
           </div>
         </div>

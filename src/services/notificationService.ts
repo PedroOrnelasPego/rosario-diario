@@ -1,37 +1,5 @@
 import { LocalNotifications, ScheduleOptions, LocalNotificationSchema } from '@capacitor/local-notifications';
 
-export const scheduleAlarms = async (alarms: { hour: number; minute: number; enabled: boolean }[], alarmSound: string) => {
-  try {
-    const navApp = (window as any).NativeApp;
-    if (navApp) {
-      // Cancelar todos primeiro
-      for (let i = 0; i < 3; i++) {
-        navApp.cancelAlarm(i);
-      }
-      
-      let actualUri = alarmSound;
-      if (navApp.getSystemRingtones) {
-         try {
-           const ringtonesStr = navApp.getSystemRingtones();
-           if (ringtonesStr) {
-             const sysRingtones = JSON.parse(ringtonesStr);
-             const found = sysRingtones.find((s:any) => s.name === alarmSound);
-             if (found) actualUri = found.url;
-           }
-         } catch(e) {}
-      }
-
-      alarms.forEach((alarm, i) => {
-        if (alarm.enabled && i < 3) {
-          navApp.setAlarm(i, alarm.hour, alarm.minute, actualUri);
-          console.log(`Native Alarm scheduled for ${alarm.hour}:${alarm.minute} at index ${i}`);
-        }
-      });
-    }
-  } catch (error) {
-    console.error("Error scheduling alarms natively:", error);
-  }
-};
 
 export const scheduleNotifications = async (config: any) => {
   try {
@@ -41,7 +9,7 @@ export const scheduleNotifications = async (config: any) => {
       await LocalNotifications.cancel(pending);
     }
 
-    if (!config.reminders && !config.dailyProverbs) return;
+    if (!config.reminders && !config.dailyProverbs && !config.novena) return;
 
     // Check/Request permissions
     const permission = await LocalNotifications.checkPermissions();
@@ -101,6 +69,68 @@ export const scheduleNotifications = async (config: any) => {
         }
       });
     });
+
+    if (config.novena) {
+      let novenasData = null;
+      try {
+        const r = await fetch('https://api-novena.vercel.app/api/novenas');
+        novenasData = await r.json();
+        localStorage.setItem('rosario_novenas_cache', JSON.stringify(novenasData));
+      } catch (err) {
+        const cached = localStorage.getItem('rosario_novenas_cache');
+        if (cached) {
+          try { novenasData = JSON.parse(cached); } catch(e) {}
+        }
+      }
+
+      if (novenasData) {
+        let novenaIdCounter = 100;
+        const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        
+        Object.keys(novenasData).forEach(monthName => {
+          const novenas = novenasData[monthName];
+          if (Array.isArray(novenas)) {
+            novenas.forEach((novena: any) => {
+               if (novena.starts) {
+                  try {
+                    const parts = novena.starts.split(' de ');
+                    if (parts.length === 2) {
+                      const day = parseInt(parts[0], 10);
+                      const month = months.indexOf(parts[1].toLowerCase());
+                      
+                      if (month !== -1 && !isNaN(day)) {
+                         const now = new Date();
+                         let year = now.getFullYear();
+                         
+                         let targetDate = new Date(year, month, day, 9, 0, 0);
+                         // Se a data já passou este ano num período de mais de 10 dias, agenda pro ano que vem
+                         // O buffer de 10 dias é porque ainda vale rezar mesmo se já começou
+                         if (targetDate.getTime() < now.getTime() - (10 * 24 * 60 * 60 * 1000)) {
+                            targetDate = new Date(year + 1, month, day, 9, 0, 0);
+                         }
+                         
+                         // Se a data proxima for estar no futuro próximo, a gente agenda
+                         if (targetDate.getTime() > now.getTime()) {
+                             notifications.push({
+                                title: "Tempo de Novena",
+                                body: `A ${novena.title} está começando hoje. Vamos rezar?`,
+                                id: novenaIdCounter++,
+                                channelId: 'rosario_daily',
+                                schedule: {
+                                   at: targetDate,
+                                   allowWhileIdle: true
+                                }
+                             });
+                         }
+                      }
+                    }
+                  } catch(e) {}
+               }
+            });
+          }
+        });
+      }
+    }
 
     if (notifications.length > 0) {
       await LocalNotifications.schedule({ notifications });

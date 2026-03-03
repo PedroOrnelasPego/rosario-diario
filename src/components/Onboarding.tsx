@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, ArrowRight, AlarmClock, User, Check, Sparkles, Moon, Sun, BellOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Camera, ArrowRight, User, Check, Sparkles, Moon, Sun, BellOff, Bell, ChevronUp, ChevronDown } from 'lucide-react';
 import { Camera as CapCamera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
@@ -20,8 +20,9 @@ interface OnboardingProps {
   onComplete: (data: { 
     name: string; 
     photo: string | null; 
-    alarms: { hour: number; minute: number; enabled: boolean }[];
     notifications: boolean;
+    dailyProverbs: boolean;
+    novenaNotifications: boolean;
     theme: 'light' | 'dark';
   }) => void;
 }
@@ -30,8 +31,9 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
-  const [alarm, setAlarm] = useState({ hour: 6, minute: 30, enabled: true });
   const [useNotifications, setUseNotifications] = useState(true);
+  const [useDailyMessages, setUseDailyMessages] = useState(true);
+  const [useNovenaNotifications, setUseNovenaNotifications] = useState(true);
   
   const avatars = [av1, av2, av3, av4, av5, av6, av7];
 
@@ -63,8 +65,9 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
     onComplete({ 
       name, 
       photo, 
-      alarms: [alarm],
       notifications: useNotifications,
+      dailyProverbs: useDailyMessages,
+      novenaNotifications: useNovenaNotifications,
       theme: isDarkMode ? 'dark' : 'light' 
     });
   };
@@ -74,7 +77,7 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
     { id: 2, title: 'Bem-vindo(a)', subtitle: 'Como gostaria de ser chamado(a)?' },
     { id: 3, title: 'Estilo do App', subtitle: 'Escolha o tema que mais lhe agrada' },
     { id: 4, title: 'Sua Identidade', subtitle: 'Escolha um avatar ou use sua foto' },
-    { id: 5, title: 'Hábito de Oração', subtitle: 'Deseja definir um despertador?' }
+    { id: 5, title: 'Tudo Pronto!', subtitle: 'Suas preferências foram salvas com sucesso. Agora você já pode iniciar sua jornada espiritual.' }
   ];
 
   return (
@@ -96,13 +99,13 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="w-full"
           >
-            <div className="flex flex-col items-center text-center mb-10">
+            <div className={`flex flex-col items-center text-center ${step === 5 ? '' : 'mb-10'}`}>
               <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary shadow-inner">
-                {step === 1 && <BellOff size={32} />}
+                {step === 1 && (useNotifications || useNovenaNotifications ? <Bell size={32} /> : <BellOff size={32} />)}
                 {step === 2 && <Sparkles size={32} className="animate-pulse" />}
                 {step === 3 && (isDarkMode ? <Moon size={32} /> : <Sun size={32} />)}
                 {step === 4 && <User size={32} />}
-                {step === 5 && <AlarmClock size={32} />}
+                {step === 5 && <Check size={32} className="stroke-[3]" />}
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
                 {steps[step-1].title}
@@ -113,26 +116,17 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
             </div>
 
             {/* Step Content */}
-            <div className="min-h-[220px] flex items-center justify-center">
+            <div className={`flex items-center justify-center ${step === 5 ? 'h-0' : 'min-h-[220px]'}`}>
               {step === 1 && (
                 <div className="w-full space-y-6 text-center">
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
                       <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                        <BellOff size={20} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Notificações</p>
-                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Para seus lembretes de oração</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
-                      <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                        <BellOff size={20} />
+                        {useNotifications ? <Bell size={20} /> : <BellOff size={20} />}
                       </div>
                       <div className="text-left flex-1">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Mensagens Inspiradoras</p>
-                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Receber lembretes de oração durante o dia</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Notificações Diárias</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Para seus lembretes de oração</p>
                       </div>
                       <button 
                         onClick={(e) => {
@@ -142,6 +136,42 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${useNotifications ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
                       >
                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${useNotifications ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                        {useDailyMessages ? <Bell size={20} /> : <BellOff size={20} />}
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Mensagens Inspiradoras</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Receber versículos durante o dia</p>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUseDailyMessages(!useDailyMessages);
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${useDailyMessages ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${useDailyMessages ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                        {useNovenaNotifications ? <Bell size={20} /> : <BellOff size={20} />}
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Notificações da Novena</p>
+                        <p className="text-[10px] text-slate-400 font-medium tracking-tight">Receber lembretes de oração da Novena</p>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUseNovenaNotifications(!useNovenaNotifications);
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${useNovenaNotifications ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${useNovenaNotifications ? 'translate-x-5' : 'translate-x-0'}`}></span>
                       </button>
                     </div>
                   </div>
@@ -236,38 +266,7 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
               )}
 
               {step === 5 && (
-                <div className="w-full space-y-6">
-                  <div className={`p-8 rounded-[40px] border-2 transition-all flex flex-col items-center gap-6 ${alarm.enabled ? 'bg-white dark:bg-slate-900 border-primary shadow-xl shadow-primary/5 ring-4 ring-primary/5' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-50 grayscale'}`}>
-                    <div className="flex items-center gap-6 select-none">
-                       <div className="flex flex-col items-center">
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, hour: (a.hour + 1) % 24}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
-                            <ChevronUp size={24} />
-                          </button>
-                          <span className="text-6xl font-black text-slate-900 dark:text-white tabular-nums">{String(alarm.hour).padStart(2, '0')}</span>
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, hour: (a.hour - 1 + 24) % 24}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
-                            <ChevronDown size={24} />
-                          </button>
-                       </div>
-                       <span className="text-5xl font-black text-slate-200 dark:text-slate-800">:</span>
-                       <div className="flex flex-col items-center">
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute + 1) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
-                            <ChevronUp size={24} />
-                          </button>
-                          <span className="text-6xl font-black text-slate-900 dark:text-white tabular-nums">{String(alarm.minute).padStart(2, '0')}</span>
-                          <button onClick={() => alarm.enabled && setAlarm(a => ({...a, minute: (a.minute - 1 + 60) % 60}))} className="p-2 text-slate-300 hover:text-primary transition-colors">
-                            <ChevronDown size={24} />
-                          </button>
-                       </div>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={() => setAlarm(a => ({...a, enabled: !a.enabled}))}
-                    className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.25em] flex items-center justify-center gap-3 transition-all ${!alarm.enabled ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                  >
-                    {!alarm.enabled ? <AlarmClock size={16} /> : <BellOff size={16} />}
-                    {!alarm.enabled ? 'Quero Alarme Diário' : 'Não quero alarme agora'}
-                  </button>
+                <div className="w-full">
                 </div>
               )}
             </div>

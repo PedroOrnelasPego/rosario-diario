@@ -18,6 +18,7 @@ interface SettingsProps {
     dailyMystery: boolean;
     prayerHaptics?: boolean;
     dailyProverbs?: boolean;
+    novena?: boolean;
   };
   setNotifications: (notifs: any) => void;
   activeSub: SubScreen;
@@ -95,7 +96,7 @@ export default function AppSettings({
     {
       title: 'Aplicativo',
       items: [
-        { id: 'version', icon: Info, label: 'Versão', description: 'v1.4.0 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
+        { id: 'version', icon: Info, label: 'Versão', description: 'v1.5.0 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
       ]
     }
   ];
@@ -201,6 +202,7 @@ export default function AppSettings({
             { id: 'dailyProverbs', label: 'Mensagens Diárias', desc: 'Receba versículos inspiradores ao longo do dia' },
             { id: 'reminders', label: 'Lembretes de Oração', desc: 'Alertas nos horários agendados' },
             { id: 'audioAlerts', label: 'Sinais Sonoros', desc: 'Reproduzir sons ao notificar' },
+            { id: 'novena', label: 'Lembretes de Novena', desc: 'Notificações da novena do mês' },
           ].map(item => (
             <div key={item.id} className="flex items-center justify-between py-6">
               <div>
@@ -232,7 +234,7 @@ export default function AppSettings({
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
            <h3 className="text-xl font-black text-slate-800 dark:text-white">Termos de Uso e Dados</h3>
            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-             O aplicativo <strong>Rosário Diário</strong> prioriza a sua privacidade espiritual. Todos os dados inseridos (nome, reflexões do diário, horários de alarme) são armazenados <strong>exclusivamente de forma local</strong> no seu dispositivo.
+             O aplicativo <strong>Rosário Diário</strong> prioriza a sua privacidade espiritual. Todos os dados inseridos (nome, reflexões do diário) são armazenados <strong>exclusivamente de forma local</strong> no seu dispositivo.
            </p>
            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
              Não coletamos, vendemos ou processamos suas informações em servidores externos para fins comerciais. Versões futuras com sincronização em nuvem serão opcionais e exigirão consentimento explícito.
@@ -358,14 +360,15 @@ export default function AppSettings({
              <Info size={40} />
            </div>
            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Rosário Diário</h3>
-           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.4.0 Gold Edition</p>
+           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.5.0 Gold Edition</p>
            <div className="space-y-4 max-w-xs">
              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
                <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>
                <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 space-y-1 font-medium italic">
-                 <li>Forma gratuita de apoiar o App (Ads)</li>
-                 <li>Nova Splash Screen Elegante</li>
-                 <li>Janelas adaptativas e sem cortes</li>
+                 <li>Sistema de Novenas Inteligente Integrado</li>
+                 <li>Acompanhamento de Progresso Otimizado</li>
+                 <li>Conquistas Extras de Perseverança</li>
+                 <li>Painel de Mensagens e Notificações Ajustados</li>
                </ul>
              </div>
              <p className="text-[10px] text-slate-400 font-bold">Desenvolvido com ❤️ para a sua fé.</p>

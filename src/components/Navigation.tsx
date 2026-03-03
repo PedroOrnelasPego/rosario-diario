@@ -20,7 +20,7 @@ export default function Navigation({ currentScreen, onNavigate }: NavigationProp
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = 
-            (item.id === 'home' && (currentScreen === 'home' || currentScreen === 'prayer' || currentScreen === 'alarm')) || 
+            (item.id === 'home' && (currentScreen === 'home' || currentScreen === 'prayer')) || 
             currentScreen === item.id;
           
           return (

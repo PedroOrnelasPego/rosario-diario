@@ -7,11 +7,10 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { AdMob, BannerAdSize, BannerAdPosition, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
 import Home from './components/Home';
 import Prayer from './components/Prayer';
-import Alarm from './components/Alarm';
 import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
 import { 
-  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon, BookOpen
+  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon, BookOpen, Church
 } from 'lucide-react';
 import av1 from './assets/avatares/1.png';
 import av2 from './assets/avatares/2.png';
@@ -71,7 +70,7 @@ const ArtworkPattern = () => (
   </div>
 );
 
-export type Screen = 'home' | 'prayer' | 'alarm' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile' | 'history';
+export type Screen = 'home' | 'prayer' | 'settings' | 'library' | 'bible' | 'diary' | 'profile' | 'edit-profile' | 'history';
 
 import Navigation from './components/Navigation';
 import AppSettings from './components/Settings';
@@ -81,7 +80,7 @@ import ProfileComponent from './components/Profile';
 import BibleComponent from './components/Bible';
 import HistoryComponent from './components/History';
 import { BibleVerse, getDailyVerse, getPsalmOfDay } from './services/bibleService';
-import { scheduleAlarms, scheduleNotifications } from './services/notificationService';
+import { scheduleNotifications } from './services/notificationService';
 
 export default function App() {
   const [isFirstTime, setIsFirstTime] = useState(() => !localStorage.getItem('rosario_user_data'));
@@ -98,34 +97,12 @@ export default function App() {
       audioAlerts: true,
       prayerHaptics: true,
       dailyProverbs: true,
+      novena: true,
     };
   });
-  
-  // Real Alarms State (Up to 3)
-  const [alarms, setAlarms] = useState(() => {
-    const savedData = localStorage.getItem('rosario_user_data');
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData);
-        if (data.alarms && data.alarms.length > 0) return data.alarms;
-        if (data.alarm) return [data.alarm];
-      } catch (e) {}
-    }
-    return [{ hour: 6, minute: 30, enabled: true }];
-  });
-  const [alarmSound, setAlarmSound] = useState(() => {
-    const savedData = localStorage.getItem('rosario_user_data');
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData);
-        if (data.alarmSound) return data.alarmSound;
-      } catch (e) {}
-    }
-    return 'Gregoriano';
-  });
-
   // Stats State
   const [totalPrayers, setTotalPrayers] = useState(0);
+  const [totalNovenas, setTotalNovenas] = useState(0);
   const [streak, setStreak] = useState(0);
   const [dailyHistory, setDailyHistory] = useState<string[]>([]);
   const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null);
@@ -187,22 +164,6 @@ export default function App() {
   }, [notifications]);
 
   useEffect(() => {
-    scheduleAlarms(alarms, alarmSound);
-    const savedData = localStorage.getItem('rosario_user_data');
-    if (savedData && !isFirstTime) {
-      try {
-        const data = JSON.parse(savedData);
-        // Só salva se houver dados reais para não limpar a base
-        if (alarms.length > 0) {
-          data.alarms = alarms;
-        }
-        data.alarmSound = alarmSound;
-        localStorage.setItem('rosario_user_data', JSON.stringify(data));
-      } catch (e) {}
-    }
-  }, [alarms, alarmSound, isFirstTime]);
-
-  useEffect(() => {
     scheduleNotifications(notifications);
   }, [notifications]);
 
@@ -225,15 +186,8 @@ export default function App() {
       const data = JSON.parse(savedData);
       setUserName(data.name);
       setUserPhoto(data.photo);
-      
-      // Migrate old alarm to alarms array
-      if (!data.alarms || data.alarms.length === 0) {
-        if (data.alarm) {
-          setAlarms([data.alarm]);
-        }
-      }
-      
       setTotalPrayers(data.totalPrayers || 0);
+      setTotalNovenas(data.totalNovenas || 0);
       setStreak(data.streak || 0);
       setDailyHistory(data.dailyHistory || []);
       setIsFirstTime(false);
@@ -304,6 +258,18 @@ export default function App() {
     }
   };
 
+  const handleNovenaComplete = () => {
+    const newTotal = totalNovenas + 1;
+    setTotalNovenas(newTotal);
+
+    const savedData = localStorage.getItem('rosario_user_data');
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      data.totalNovenas = newTotal;
+      localStorage.setItem('rosario_user_data', JSON.stringify(data));
+    }
+  };
+
   const toggleDarkMode = async () => {
     setIsDarkMode(!isDarkMode);
     try {
@@ -320,18 +286,17 @@ export default function App() {
   const handleOnboardingComplete = (data: { 
     name: string; 
     photo: string | null; 
-    alarms: { hour: number; minute: number; enabled: boolean }[];
     notifications: boolean;
+    dailyProverbs: boolean;
+    novenaNotifications: boolean;
     theme: 'light' | 'dark';
   }) => {
     setUserName(data.name);
     setUserPhoto(data.photo);
-    setAlarms(data.alarms);
-    setNotifications(prev => ({...prev, reminders: data.notifications, dailyMystery: data.notifications}));
+    setNotifications(prev => ({...prev, reminders: data.notifications, dailyMystery: data.notifications, dailyProverbs: data.dailyProverbs, novena: data.novenaNotifications}));
     localStorage.setItem('rosario_user_data', JSON.stringify({
       name: data.name,
-      photo: data.photo,
-      alarms: data.alarms
+      photo: data.photo
     }));
     setIsFirstTime(false);
   };
@@ -411,14 +376,13 @@ export default function App() {
                 dailyArt={dailyArt} 
                 isDarkMode={isDarkMode} 
                 onToggleDarkMode={toggleDarkMode} 
-                alarms={alarms}
-                setAlarms={setAlarms}
                 userName={userName}
                 userPhoto={userPhoto}
                 streak={streak}
                 totalPrayers={totalPrayers}
                 dailyHistory={dailyHistory}
                 dailyVerse={dailyVerse}
+                onNovenaComplete={handleNovenaComplete}
               />
             )}
             {currentScreen === 'prayer' && (
@@ -430,15 +394,6 @@ export default function App() {
                 typography={prayerTypography}
                 hapticsEnabled={notifications.prayerHaptics ?? true}
                 supporterLevel={supporterLevel}
-              />
-            )}
-            {currentScreen === 'alarm' && (
-              <Alarm 
-                onNavigate={setCurrentScreen} 
-                alarms={alarms} 
-                setAlarms={setAlarms}
-                sound={alarmSound}
-                setSound={setAlarmSound}
               />
             )}
             {currentScreen === 'settings' && (
@@ -487,6 +442,7 @@ export default function App() {
                 userPhoto={userPhoto}
                 onPhotoUpload={handlePhotoUploadTrigger}
                 totalPrayers={totalPrayers}
+                totalNovenas={totalNovenas}
                 streak={streak}
                 dailyHistory={dailyHistory}
                 userNameSubtitle={userNameSubtitle}
@@ -679,6 +635,15 @@ export default function App() {
                     current={supporterLevel > 0 ? 1 : 0}
                     earned={supporterLevel > 0}
                     icon={Heart}
+                  />
+                  <AchievementBlock 
+                    title="Perseverança da Novena" 
+                    desc="Participar de 12 novenas completas" 
+                    progress={Math.min((totalNovenas/12)*100, 100)} 
+                    total={12} 
+                    current={Math.min(totalNovenas, 12)}
+                    earned={totalNovenas >= 12}
+                    icon={Church}
                   />
                 </div>
               </motion.div>

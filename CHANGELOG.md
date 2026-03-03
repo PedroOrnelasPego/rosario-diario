@@ -1,5 +1,11 @@
 # Changelog - Rosário Diário
 
+## [1.5.0] - 2026-03-03
+- **Novenas Inteligentes:** Agora você pode rezar grandes Novenas conectadas a base de dados em tempo real, mantendo o controle de dias concluídos com progresso virtual.
+- **Agendamento Guiado:** O App lê a data de festa da Novena e agenda um alerta diretamente para o dia oficial no seu calendário!
+- **Nova Conquista:** Painel de prêmios enriquecido com o troféu de "Perseverança da Novena" pra quem completar seus primeiros ciclos de 12 repetições.
+- **Onboarding e Permissões Unificados:** Fluxo de boas vindas inicial mais claro e rápido para definir suas notificações (Adição das Mensagens Inspiradoras como Toggle separado).
+
 ## [1.4.0] - 2026-03-02
 - **Nova Splash Screen Educada:** Transições mais suaves, layout centralizado e animado para apresentar o App com mais elegância logo na abertura.
 - **Ajuda Gratuita (Ads):** Nova funcionalidade de anúncios recompensados para dar oportunidade a usuários que desejam apoiar o aplicativo mas não podem arcar com o plano premium pago.
