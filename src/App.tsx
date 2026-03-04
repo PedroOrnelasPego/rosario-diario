@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -10,7 +11,7 @@ import Prayer from './components/Prayer';
 import Onboarding from './components/Onboarding';
 import { Artwork, getDailyArtImage } from './services/artService';
 import { 
-  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon, BookOpen, Church
+  Library, PencilLine, User, Sparkles, X, Activity, History, ShieldCheck, Download, Clock, Flame, Award, Moon, CheckCircle2, Heart, Camera as CameraIcon, BookOpen, Church, Trash2
 } from 'lucide-react';
 import av1 from './assets/avatares/1.png';
 import av2 from './assets/avatares/2.png';
@@ -110,6 +111,7 @@ export default function App() {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userNameSubtitle, setUserNameSubtitle] = useState(() => {
     return localStorage.getItem('rosario_user_subtitle') || 'Fiel de Maria';
   });
@@ -130,6 +132,8 @@ export default function App() {
       isBold: false
     };
   });
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [novenaLoaded, setNovenaLoaded] = useState(false);
 
   // Request permissions and manage status bar on mount
   useEffect(() => {
@@ -154,6 +158,19 @@ export default function App() {
     };
     initApp();
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const initNativeFeatures = async () => {
+      try {
+        if (Capacitor.getPlatform() === 'android') {
+          await AdMob.initialize({});
+        }
+      } catch (err) {
+        console.warn('Native features init error', err);
+      }
+    };
+    initNativeFeatures();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('rosario_prayer_typography', JSON.stringify(prayerTypography));
@@ -210,7 +227,9 @@ export default function App() {
     ];
     const currentMysteryName = mysteryNames[dayOfWeek];
     
-    getDailyArtImage(currentMysteryName, dateStr).then(setDailyArt);
+    getDailyArtImage(currentMysteryName, dateStr).then(art => {
+      setDailyArt(art);
+    });
     
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -345,20 +364,37 @@ export default function App() {
     setIsPhotoPromptOpen(false);
   };
 
-  if (isFirstTime) {
-    return (
-      <Onboarding 
-        isDarkMode={isDarkMode} 
-        onToggleDarkMode={toggleDarkMode} 
-        onComplete={handleOnboardingComplete} 
-        onPhotoUpload={handlePhotoUploadTrigger}
-      />
-    );
-  }
+  const handleDeleteAccount = () => {
+    // Implement account deletion logic here
+    console.log("Account deletion initiated.");
+    // For now, just clear local storage and reset state
+    localStorage.clear();
+    setIsFirstTime(true);
+    setCurrentScreen('home');
+    setUserName('Maria Silva');
+    setUserPhoto(null);
+    setTotalPrayers(0);
+    setTotalNovenas(0);
+    setStreak(0);
+    setDailyHistory([]);
+    setUserNameSubtitle('Fiel de Maria');
+    setSupporterLevel(0);
+    setPurchasedDonations([]);
+    setIsDeleteModalOpen(false);
+  };
 
   return (
     <div className={`mx-auto md:max-w-none max-w-[430px] h-[100dvh] w-full flex flex-col relative overflow-hidden shadow-2xl ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-      <main className="flex-1 w-full overflow-y-auto relative flex flex-col custom-scrollbar">
+      {isFirstTime ? (
+        <Onboarding 
+          isDarkMode={isDarkMode} 
+          onToggleDarkMode={toggleDarkMode} 
+          onComplete={handleOnboardingComplete} 
+          onPhotoUpload={handlePhotoUploadTrigger}
+          userPhoto={userPhoto}
+        />
+      ) : (
+        <main className="flex-1 w-full overflow-y-auto relative flex flex-col custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentScreen}
@@ -396,26 +432,27 @@ export default function App() {
                 supporterLevel={supporterLevel}
               />
             )}
-            {currentScreen === 'settings' && (
-              <AppSettings 
-                onNavigate={setCurrentScreen} 
-                isDarkMode={isDarkMode} 
-                onToggleDarkMode={toggleDarkMode} 
-                userName={userName}
-                setUserName={setUserName}
-                userPhoto={userPhoto}
-                setUserPhoto={setUserPhoto}
-                userNameSubtitle={userNameSubtitle}
-                setUserNameSubtitle={setUserNameSubtitle}
-                onPhotoUpload={handlePhotoUploadTrigger}
-                notifications={notifications}
-                setNotifications={setNotifications}
-                activeSub={settingsSub}
-                setActiveSub={setSettingsSub}
-                prayerTypography={prayerTypography}
-                setPrayerTypography={setPrayerTypography}
-              />
-            )}
+              {currentScreen === 'settings' && (
+                <AppSettings 
+                  onNavigate={setCurrentScreen} 
+                  isDarkMode={isDarkMode} 
+                  onToggleDarkMode={toggleDarkMode} 
+                  userName={userName}
+                  setUserName={setUserName}
+                  userPhoto={userPhoto}
+                  setUserPhoto={setUserPhoto}
+                  userNameSubtitle={userNameSubtitle}
+                  setUserNameSubtitle={setUserNameSubtitle}
+                  onPhotoUpload={handlePhotoUploadTrigger}
+                  notifications={notifications}
+                  setNotifications={setNotifications}
+                  activeSub={settingsSub}
+                  setActiveSub={setSettingsSub}
+                  prayerTypography={prayerTypography}
+                  setPrayerTypography={setPrayerTypography}
+                  onOpenDelete={() => setIsDeleteModalOpen(true)}
+                />
+              )}
             {currentScreen === 'library' && (
               <LibraryComponent 
                 onNavigate={setCurrentScreen} 
@@ -428,30 +465,31 @@ export default function App() {
               <BibleComponent onNavigate={setCurrentScreen} />
             )}
             {currentScreen === 'diary' && <DiaryComponent onNavigate={setCurrentScreen} />}
-            {currentScreen === 'profile' && (
-              <ProfileComponent 
-                onNavigate={(screen) => {
-                  if (screen === 'edit-profile') {
-                    setSettingsSub('edit-profile');
-                    setCurrentScreen('settings');
-                  } else {
-                    setCurrentScreen(screen);
-                  }
-                }} 
-                userName={userName}
-                userPhoto={userPhoto}
-                onPhotoUpload={handlePhotoUploadTrigger}
-                totalPrayers={totalPrayers}
-                totalNovenas={totalNovenas}
-                streak={streak}
-                dailyHistory={dailyHistory}
-                userNameSubtitle={userNameSubtitle}
-                supporterLevel={supporterLevel}
-                onOpenPremium={() => setIsPremiumModalOpen(true)}
-                onOpenAchievements={() => setIsAchievementsModalOpen(true)}
-                onOpenDonation={() => setIsDonationModalOpen(true)}
-              />
-            )}
+              {currentScreen === 'profile' && (
+                <ProfileComponent 
+                  onNavigate={(screen) => {
+                    if (screen === 'edit-profile') {
+                      setSettingsSub('edit-profile');
+                      setCurrentScreen('settings');
+                    } else {
+                      setCurrentScreen(screen);
+                    }
+                  }} 
+                  userName={userName}
+                  userPhoto={userPhoto}
+                  onPhotoUpload={handlePhotoUploadTrigger}
+                  totalPrayers={totalPrayers}
+                  totalNovenas={totalNovenas}
+                  streak={streak}
+                  dailyHistory={dailyHistory}
+                  userNameSubtitle={userNameSubtitle}
+                  supporterLevel={supporterLevel}
+                  onOpenPremium={() => setIsPremiumModalOpen(true)}
+                  onOpenAchievements={() => setIsAchievementsModalOpen(true)}
+                  onOpenDonation={() => setIsDonationModalOpen(true)}
+                  onOpenDelete={() => setIsDeleteModalOpen(true)}
+                />
+              )}
             {currentScreen === 'history' && (
               <HistoryComponent 
                 onNavigate={setCurrentScreen}
@@ -807,7 +845,57 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Delete Account Modal */}
+        <AnimatePresence>
+          {isDeleteModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[130] flex items-center justify-center p-6"
+            >
+              <div 
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+                onClick={() => setIsDeleteModalOpen(false)}
+              ></div>
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[40px] overflow-hidden shadow-2xl flex flex-col p-8 text-center"
+              >
+                <div className="size-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-6">
+                  <Trash2 size={40} />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Apagar Conta?</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
+                  Tem certeza que deseja apagar sua conta? Esta ação é irreversível e todo seu progresso será perdido para sempre.
+                </p>
+                
+                <div className="flex flex-col gap-3 w-full">
+                  <button 
+                    onClick={() => {
+                      localStorage.clear();
+                      window.location.reload();
+                    }}
+                    className="w-full bg-red-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-red-500/20 hover:bg-red-600 transition-all active:scale-[0.98]"
+                  >
+                    Sim, Apagar Tudo
+                  </button>
+                  <button 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="w-full py-4 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest mt-2"
+                  >
+                    Não, Manter Minha Fé
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
+      )}
       
       {/* Footer Navigation constant across all screens, except during prayer */}
       {!['prayer', 'bible', 'onboarding'].includes(currentScreen) && (

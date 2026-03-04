@@ -1,5 +1,5 @@
 import { 
-  Settings, Camera, Award, Flame, Calendar, MapPin, CheckCircle2, ChevronRight, Lock, Heart, Church 
+  Settings, Camera, Award, Flame, Calendar, MapPin, CheckCircle2, ChevronRight, Lock, Heart, Church, Trash2 
 } from 'lucide-react';
 import { Screen } from '../App';
 import avPadrao from '../assets/avatares/padrao.png';
@@ -18,6 +18,7 @@ interface ProfileProps {
   onOpenPremium: () => void;
   onOpenAchievements: () => void;
   onOpenDonation: () => void;
+  onOpenDelete: () => void;
 }
 
 export default function ProfileComponent({ 
@@ -33,7 +34,8 @@ export default function ProfileComponent({
   supporterLevel,
   onOpenPremium,
   onOpenAchievements,
-  onOpenDonation
+  onOpenDonation,
+  onOpenDelete
 }: ProfileProps) {
   const stats = [
     { label: 'Ofensiva', value: String(streak), icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
@@ -207,6 +209,22 @@ export default function ProfileComponent({
                 <span className="text-[10px] font-black text-accent-gold uppercase tracking-widest flex items-center gap-1">
                   <Lock size={10} /> Recurso Premium
                 </span>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          <button 
+            onClick={onOpenDelete} 
+            className="flex items-center justify-between p-5 w-full hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors relative group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="size-10 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                <Trash2 size={20} />
+              </div>
+              <div className="text-left">
+                <span className="text-sm font-bold text-red-600 dark:text-red-400 block">Apagar Minha Conta</span>
+                <span className="text-[10px] font-medium text-slate-400 block tracking-tight">Excluir todos os dados permanentemente</span>
               </div>
             </div>
             <ChevronRight size={16} className="text-slate-300 group-hover:translate-x-1 transition-transform" />

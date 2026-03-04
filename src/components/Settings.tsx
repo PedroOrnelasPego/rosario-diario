@@ -31,6 +31,7 @@ interface SettingsProps {
   setPrayerTypography: (typo: any) => void;
   userNameSubtitle: string;
   setUserNameSubtitle: (subtitle: string) => void;
+  onOpenDelete: () => void;
 }
 
 type SubScreen = 'main' | 'edit-profile' | 'notifications' | 'privacy' | 'version' | 'typography';
@@ -50,7 +51,8 @@ export default function AppSettings({
   prayerTypography,
   setPrayerTypography,
   userNameSubtitle,
-  setUserNameSubtitle
+  setUserNameSubtitle,
+  onOpenDelete
 }: SettingsProps) {
   const [tempName, setTempName] = useState(userName);
 
@@ -96,7 +98,7 @@ export default function AppSettings({
     {
       title: 'Aplicativo',
       items: [
-        { id: 'version', icon: Info, label: 'Versão', description: 'v1.5.0 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
+        { id: 'version', icon: Info, label: 'Versão', description: 'v1.5.3 (Gold Edition)', color: 'text-slate-400', onClick: () => setActiveSub('version') },
       ]
     }
   ];
@@ -172,12 +174,7 @@ export default function AppSettings({
           <div className="pt-10">
             <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4 ml-1 text-center">Área de Perigo</h3>
             <button 
-              onClick={() => {
-                if (confirm('Tem certeza que deseja apagar sua conta? Esta ação é irreversível e todo seu progresso e conquistas serão perdidos para sempre.')) {
-                  localStorage.clear();
-                  window.location.reload();
-                }
-              }}
+              onClick={onOpenDelete}
               className="w-full bg-red-50 dark:bg-red-950/30 text-red-500 font-bold py-4 rounded-3xl border border-red-100 dark:border-red-900/50 flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all active:scale-95"
             >
               <Trash2 size={18} /> Apagar Minha Conta
@@ -360,17 +357,16 @@ export default function AppSettings({
              <Info size={40} />
            </div>
            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Rosário Diário</h3>
-           <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.5.0 Gold Edition</p>
-           <div className="space-y-4 max-w-xs">
-             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
-               <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>
-               <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 space-y-1 font-medium italic">
-                 <li>Sistema de Novenas Inteligente Integrado</li>
-                 <li>Acompanhamento de Progresso Otimizado</li>
-                 <li>Conquistas Extras de Perseverança</li>
-                 <li>Painel de Mensagens e Notificações Ajustados</li>
-               </ul>
-             </div>
+            <p className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-6">v1.5.4 Gold Edition</p>
+            <div className="space-y-4 max-w-xs">
+              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-[10px] items-start text-left">
+                <p className="font-bold text-slate-400 mb-2 uppercase tracking-widest">Nesta Versão:</p>
+                <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 space-y-1 font-medium italic">
+                  <li>Novo Modal de Exclusão de Conta (Área de Perigo)</li>
+                  <li>Estratégia Prioritária de Carregamento (AdMob)</li>
+                  <li>Correções de Onboarding e Refinamento de Perfil</li>
+                </ul>
+              </div>
              <p className="text-[10px] text-slate-400 font-bold">Desenvolvido com ❤️ para a sua fé.</p>
            </div>
         </div>

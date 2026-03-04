@@ -1,5 +1,22 @@
 # Changelog - Rosário Diário
 
+## [1.5.4] - 2026-03-04
+- **Segurança e Privacidade:** Implementado novo modal de exclusão de conta com design premium, garantindo que o usuário tenha total controle e confirmação visual antes de limpar seus dados.
+- **Performance de Carregamento:** Otimização na prioridade de inicialização (Assets Visuais > Novena > AdMob), garantindo uma experiência fluida sem engasgos durante o preloading de anúncios.
+- **Refinamento de Perfil:** Adição do acesso rápido para exclusão de conta diretamente na aba de Perfil e correções no fluxo de onboarding.
+
+## [1.5.3] - 2026-03-03
+- **Novos Avatares:** Adicionados 3 novos avatares religiosos na galeria de escolha de perfil.
+- **Melhorias de Estabilidade:** Ajustes finos no processamento de imagens e notificações nativas.
+
+## [1.5.2] - 2026-03-03
+- **Otimização de Espaço na Home:** Novo design compacto para os cartões de "Estatísticas" (Terços e Ofensiva), agora em formato retangular horizontal, permitindo que o banner de Novenas e outros conteúdos apareçam sem rolagem em telas menores.
+- **Refinamento de Margens:** Ajustes nos paddings e gaps do cabeçalho e botões de ação para uma interface mais densa e elegante.
+
+## [1.5.1] - 2026-03-03
+- **Polimento Visual na Experiência Nativa:** Adicionada a nova imagem de Splash Screen de entrada nas orientações Vertical e Horizontal do dispositivo sem cortes nas bordas.
+- **Identidade do Sistema:** Integração e ativação do ícone nativo (`ic_stat_rosario`) otimizado nos alertas de novenas e lembretes vindos das Notificações Push do celular.
+
 ## [1.5.0] - 2026-03-03
 - **Novenas Inteligentes:** Agora você pode rezar grandes Novenas conectadas a base de dados em tempo real, mantendo o controle de dias concluídos com progresso virtual.
 - **Agendamento Guiado:** O App lê a data de festa da Novena e agenda um alerta diretamente para o dia oficial no seu calendário!

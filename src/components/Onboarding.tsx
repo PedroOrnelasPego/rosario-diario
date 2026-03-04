@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, ArrowRight, User, Check, Sparkles, Moon, Sun, BellOff, Bell, ChevronUp, ChevronDown } from 'lucide-react';
 import { Camera as CapCamera } from '@capacitor/camera';
@@ -11,6 +11,9 @@ import av4 from '../assets/avatares/4.png';
 import av5 from '../assets/avatares/5.png';
 import av6 from '../assets/avatares/6.png';
 import av7 from '../assets/avatares/7.png';
+import av8 from '../assets/avatares/8.png';
+import av9 from '../assets/avatares/9.png';
+import av10 from '../assets/avatares/10.png';
 import avPadrao from '../assets/avatares/padrao.png';
 
 interface OnboardingProps {
@@ -25,9 +28,10 @@ interface OnboardingProps {
     novenaNotifications: boolean;
     theme: 'light' | 'dark';
   }) => void;
+  userPhoto: string | null;
 }
 
-export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload, onComplete }: OnboardingProps) {
+export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload, onComplete, userPhoto }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
@@ -35,7 +39,12 @@ export default function Onboarding({ isDarkMode, onToggleDarkMode, onPhotoUpload
   const [useDailyMessages, setUseDailyMessages] = useState(true);
   const [useNovenaNotifications, setUseNovenaNotifications] = useState(true);
   
-  const avatars = [av1, av2, av3, av4, av5, av6, av7];
+  const avatars = [av1, av2, av3, av4, av5, av6, av7, av8, av9, av10];
+
+  useEffect(() => {
+    if (userPhoto) setPhoto(userPhoto);
+  }, [userPhoto]);
+
 
   const requestPermissions = async () => {
     try {

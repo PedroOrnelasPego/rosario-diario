@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     LocalNotifications: {
-      smallIcon: "ic_stat_icon_config_sample",
+      smallIcon: "ic_stat_rosario",
       iconColor: "#488AFF",
       sound: "beep.wav",
     },

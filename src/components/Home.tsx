@@ -68,9 +68,13 @@ export default function Home({
 
   useEffect(() => {
     const initAd = async () => {
+      // Prioridade 1: Imagem Diária e Prioridade 2: Conteúdo da Novena
+      if (!dailyArt || !novena) return;
+
+      // Prioridade 3: Carregamento do AdMob (Interstitial Premiado)
       if (parseInt(localStorage.getItem('rosario_supporter_level') || '0', 10) > 0 || Capacitor.getPlatform() !== 'android') return;
+      
       try {
-        await AdMob.initialize({});
         await AdMob.prepareRewardInterstitialAd({
           adId: 'ca-app-pub-5471973562089914/4377350660',
           isTesting: false
@@ -81,7 +85,7 @@ export default function Home({
       }
     };
     initAd();
-  }, []);
+  }, [dailyArt, novena]);
 
   const toggleNovenaDay = (dayIndex: number) => {
     let newProgress = [...novenaProgress];
@@ -119,6 +123,7 @@ export default function Home({
       const dismissListener = await AdMob.addListener(RewardInterstitialAdPluginEvents.Dismissed, () => {
          dismissListener.remove();
          setShowCompletionModal(false);
+         onNavigate('home');
       });
       await AdMob.showRewardInterstitialAd();
     } catch (e) {

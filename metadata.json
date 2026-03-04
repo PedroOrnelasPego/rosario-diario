@@ -1,5 +1,7 @@
 {
-  "name": "Rosário Diário",
-  "description": "Um aplicativo diário de oração do rosário com arte clássica, novenas, orações e acompanhamento de progresso.",
+  "name": "Rosário Diário - Novenas e Terço",
+  "short_name": "Rosário",
+  "description": "O Rosário Diário é o seu companheiro católico definitivo para a oração diária. Reze o Santo Terço completo com mistérios e artes sacras clássicas, acompanhe novenas atualizadas anualmente com sistema inteligente de alertas pontuais (ex: Novena de São José, Novena de Nossa Senhora Aparecida). Cultive sua fé com uma ampla biblioteca contendo a Bíblia completa, Cânones da Igreja, salmos e mensagens inspiradoras. Monitore seu envolvimento espiritual através de um dashboard completo de conquistas (gamificação da fé) e registro visual das suas orações em calendário.",
+  "keywords": ["rosário", "terço", "novena", "bíblia", "oração", "salmos", "católico", "santos", "fé", "devoção"],
   "requestFramePermissions": []
 }

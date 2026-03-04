@@ -48,7 +48,6 @@ export default function Prayer({ onNavigate, dailyArt, onComplete, onOpenPremium
     const initAd = async () => {
       if (supporterLevel > 0 || Capacitor.getPlatform() !== 'android') return;
       try {
-        await AdMob.initialize({});
         await AdMob.prepareRewardInterstitialAd({
           adId: 'ca-app-pub-5471973562089914/4377350660',
           isTesting: false
